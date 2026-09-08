@@ -128,7 +128,7 @@ struct LauncherBoardWidget: Widget {
         ) { entry in
             LauncherWidgetView(entry: entry)
         }
-        .configurationDisplayName("Launcher Board")
+        .configurationDisplayName("Shortcut Launcher")
         .description("Run your shortcuts from the Home Screen.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
         .contentMarginsDisabled()

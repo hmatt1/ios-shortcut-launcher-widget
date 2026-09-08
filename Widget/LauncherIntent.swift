@@ -69,7 +69,7 @@ struct BoardPresetQuery: EntityQuery {
 /// Fourteen rows: twelve shortcuts and two looks. The number of assigned
 /// shortcuts is the slot count, so no control can contradict another.
 struct LauncherIntent: WidgetConfigurationIntent {
-    static let title: LocalizedStringResource = "Launcher Board"
+    static let title: LocalizedStringResource = "Shortcut Launcher"
 
     static var description: IntentDescription {
         IntentDescription("Run your shortcuts from the Home Screen.")

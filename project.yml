@@ -27,7 +27,7 @@ targets:
     info:
       path: App/Info.plist
       properties:
-        CFBundleDisplayName: Launcher Board
+        CFBundleDisplayName: Shortcut Launcher Widget
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         UILaunchScreen: {}
@@ -65,7 +65,7 @@ targets:
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
-        CFBundleDisplayName: Launcher Board
+        CFBundleDisplayName: Shortcut Launcher Widget
     dependencies:
       - sdk: WidgetKit.framework
       - sdk: SwiftUI.framework
