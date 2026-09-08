@@ -201,6 +201,18 @@ struct PresetEditorView: View {
                     
                     Section("Colors (Editing \(themeStore.themes.first(where: { $0.id == preset.themeId })?.name ?? "Theme"))") {
                         let spec = preset.activeSpec
+                        
+                        TextField("Theme Name", text: Binding(
+                            get: { themeStore.themes.first(where: { $0.id == preset.themeId })?.name ?? "Theme" },
+                            set: { newName in
+                                if var theme = themeStore.themes.first(where: { $0.id == preset.themeId }) {
+                                    theme.name = newName
+                                    themeStore.update(theme)
+                                }
+                            }
+                        ))
+                        .submitLabel(.done)
+
                         ColorPicker("Background 1", selection: Binding(
                             get: { spec.background.first?.color ?? .black },
                             set: { updateActiveTheme { $0.background[0].color = $1 }($0) }
@@ -214,6 +226,43 @@ struct PresetEditorView: View {
                                         spec.background.append(RGB(red: 0, green: 0, blue: 0))
                                     }
                                     spec.background[1].color = color
+                                }(newValue)
+                            }
+                        ))
+                        
+                        ColorPicker("All Labels", selection: Binding(
+                            get: { spec.labels.first?.color ?? .white },
+                            set: { newValue in
+                                updateActiveTheme { spec, color in
+                                    if spec.labels.isEmpty {
+                                        spec.labels = Array(repeating: RGB(0xFFFFFF), count: 12)
+                                    } else {
+                                        while spec.labels.count < 12 {
+                                            spec.labels.append(spec.labels[0])
+                                        }
+                                    }
+                                    for i in 0..<12 {
+                                        spec.labels[i].color = color
+                                    }
+                                }(newValue)
+                            }
+                        ))
+                        
+                        ColorPicker("All Shortcuts", selection: Binding(
+                            get: { spec.accents.first?.color ?? spec.labels.first?.color ?? .white },
+                            set: { newValue in
+                                updateActiveTheme { spec, color in
+                                    if spec.accents.isEmpty {
+                                        let fallback = spec.labels.first ?? RGB(0xFFFFFF)
+                                        spec.accents = Array(repeating: fallback, count: 12)
+                                    } else {
+                                        while spec.accents.count < 12 {
+                                            spec.accents.append(spec.accents[0])
+                                        }
+                                    }
+                                    for i in 0..<12 {
+                                        spec.accents[i].color = color
+                                    }
                                 }(newValue)
                             }
                         ))
@@ -237,9 +286,7 @@ struct PresetEditorView: View {
                                     }(newValue)
                                 }
                             ))
-                        }
-                        
-                        ForEach(0..<12, id: \.self) { index in
+                            
                             ColorPicker("Shortcut \(index + 1)", selection: Binding(
                                 get: {
                                     if spec.accents.isEmpty { return spec.labels.first?.color ?? .white }
