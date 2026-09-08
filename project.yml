@@ -13,6 +13,7 @@ targets:
     settings:
       PRODUCT_BUNDLE_IDENTIFIER: com.hmatt1.shortcutlauncherwidget
       DEVELOPMENT_TEAM: FHMS65N3XS
+      CODE_SIGN_STYLE: Automatic
       ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
       TARGETED_DEVICE_FAMILY: "1"
       ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
@@ -20,6 +21,9 @@ targets:
       MARKETING_VERSION: "3.4.4"
       CURRENT_PROJECT_VERSION: "21"
       CODE_SIGN_ENTITLEMENTS: App/LauncherBoard.entitlements
+    configs:
+      Release:
+        CODE_SIGN_IDENTITY: "Apple Distribution"
     info:
       path: App/Info.plist
       properties:
@@ -44,12 +48,16 @@ targets:
     settings:
       PRODUCT_BUNDLE_IDENTIFIER: com.hmatt1.shortcutlauncherwidget.Widget
       DEVELOPMENT_TEAM: FHMS65N3XS
+      CODE_SIGN_STYLE: Automatic
       SKIP_INSTALL: "YES"
       TARGETED_DEVICE_FAMILY: "1"
       SWIFT_VERSION: "5.0"
       MARKETING_VERSION: "3.4.4"
       CURRENT_PROJECT_VERSION: "21"
       CODE_SIGN_ENTITLEMENTS: Widget/LauncherBoardWidget.entitlements
+    configs:
+      Release:
+        CODE_SIGN_IDENTITY: "Apple Distribution"
     info:
       path: Widget/Info.plist
       properties:

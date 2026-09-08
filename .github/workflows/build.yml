@@ -39,7 +39,7 @@ jobs:
           mkdir -p ~/.appstoreconnect/private_keys/
           echo "$APPSTORE_P8_KEY" | tr -d '\r' > ~/.appstoreconnect/private_keys/AuthKey_${APPSTORE_KEY_ID}.p8
 
-          # 2. Archive the app (Unsigned)
+          # 2. Archive the app
           xcodebuild clean archive \
             -project LauncherBoard.xcodeproj \
             -scheme LauncherBoard \
@@ -47,9 +47,10 @@ jobs:
             -archivePath LauncherBoard.xcarchive \
             MARKETING_VERSION="$VERSION" \
             CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED="NO" \
-            CODE_SIGNING_ALLOWED="NO"
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_${APPSTORE_KEY_ID}.p8 \
+            -authenticationKeyID $APPSTORE_KEY_ID \
+            -authenticationKeyIssuerID $APPSTORE_ISSUER_ID
 
           # 3. Create ExportOptions.plist
           cat <<EOF > exportOptions.plist
