@@ -88,7 +88,7 @@ struct LauncherWidgetView: View {
                 }
             }
         }
-        .containerBackground(for: .widget) {
+        .background {
             BoardBackground(
                 spec: preset.activeSpec,
                 accented: accented,
@@ -96,6 +96,9 @@ struct LauncherWidgetView: View {
                 position: entry.configuration.widgetPosition,
                 family: size
             )
+        }
+        .containerBackground(for: .widget) {
+            Color.clear
         }
     }
 
