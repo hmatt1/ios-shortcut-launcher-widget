@@ -58,11 +58,13 @@ jobs:
           <plist version="1.0">
           <dict>
               <key>method</key>
-              <string>app-store</string>
+              <string>app-store-connect</string>
               <key>manageAppVersionAndBuildNumber</key>
               <true/>
               <key>uploadSymbols</key>
               <true/>
+              <key>teamID</key>
+              <string>FHMS65N3XS</string>
           </dict>
           </plist>
           EOF
