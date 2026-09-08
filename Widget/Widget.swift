@@ -88,7 +88,19 @@ struct LauncherWidgetView: View {
                 }
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background {
+            if preset.background != .liquidGlass {
+                BoardBackground(
+                    spec: preset.activeSpec,
+                    accented: accented,
+                    style: preset.background,
+                    position: entry.configuration.widgetPosition,
+                    family: size
+                )
+            }
+        }
+        .containerBackground(for: .widget) {
             BoardBackground(
                 spec: preset.activeSpec,
                 accented: accented,
@@ -96,9 +108,6 @@ struct LauncherWidgetView: View {
                 position: entry.configuration.widgetPosition,
                 family: size
             )
-        }
-        .containerBackground(for: .widget) {
-            Color.clear
         }
     }
 

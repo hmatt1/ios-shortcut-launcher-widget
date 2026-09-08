@@ -43,7 +43,8 @@ struct BoardBackground: View {
             case .theme:
                 themeBackground
             case .liquidGlass:
-                Color.clear
+                Rectangle()
+                    .fill(.ultraThinMaterial)
             case .glassTiles, .transparent:
                 transparentBackground
             }
