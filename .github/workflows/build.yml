@@ -35,9 +35,9 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           printf '%s' "$VERSION" | grep -Eq '^[0-9]+(\.[0-9]+)*$' || VERSION="0.0.0"
 
-          # 1. Setup App Store Connect API Key for xcodebuild
+          # 1. Setup App Store Connect API Key for xcodebuild (and fix Windows line endings!)
           mkdir -p ~/.appstoreconnect/private_keys/
-          echo "$APPSTORE_P8_KEY" > ~/.appstoreconnect/private_keys/AuthKey_${APPSTORE_KEY_ID}.p8
+          echo "$APPSTORE_P8_KEY" | tr -d '\r' > ~/.appstoreconnect/private_keys/AuthKey_${APPSTORE_KEY_ID}.p8
 
           # 2. Archive the app (Unsigned)
           xcodebuild clean archive \
