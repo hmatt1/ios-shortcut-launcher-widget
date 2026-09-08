@@ -75,6 +75,12 @@ struct LauncherIntent: WidgetConfigurationIntent {
         IntentDescription("Run your shortcuts from the Home Screen.")
     }
 
+    @Parameter(title: "Preset")
+    var preset: BoardPresetEntity?
+
+    @Parameter(title: "Position (If Transparent)", default: .topLeft)
+    var widgetPosition: WidgetPosition
+
     @Parameter(title: "1")
     var shortcut1: SystemShortcut?
 
@@ -110,12 +116,6 @@ struct LauncherIntent: WidgetConfigurationIntent {
 
     @Parameter(title: "12")
     var shortcut12: SystemShortcut?
-
-    @Parameter(title: "Preset")
-    var preset: BoardPresetEntity?
-
-    @Parameter(title: "Position (If Transparent)", default: .topLeft)
-    var widgetPosition: WidgetPosition
 
     /// Assigned shortcuts in slot order, holes closed.
     var slots: [SystemShortcut] {
