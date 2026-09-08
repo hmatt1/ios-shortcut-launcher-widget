@@ -5,7 +5,7 @@ public enum AppGroup {
 
     /// The suffix that survives rewriting. Sideloadly / AltStore prefix the
     /// group with an account-unique token, so the tail stays intact.
-    private static let expectedSuffix = "com.hmatt1.launcherboard"
+    private static let expectedSuffix = "com.hmatt1.shortcutlauncherwidget"
 
     /// Optional build-time override. Set `APP_GROUP_ID` in Info.plist (fed by
     /// an .xcconfig) when you build and sign yourself.

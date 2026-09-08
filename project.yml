@@ -11,7 +11,9 @@ targets:
     deploymentTarget: "27.0"
     sources: [App, Shared]
     settings:
-      PRODUCT_BUNDLE_IDENTIFIER: com.hmatt1.launcherboard
+      PRODUCT_BUNDLE_IDENTIFIER: com.hmatt1.shortcutlauncherwidget
+      DEVELOPMENT_TEAM: FHMS65N3XS
+      CODE_SIGN_STYLE: Automatic
       ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
       TARGETED_DEVICE_FAMILY: "1"
       ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
@@ -41,7 +43,9 @@ targets:
     deploymentTarget: "27.0"
     sources: [Widget, Shared]
     settings:
-      PRODUCT_BUNDLE_IDENTIFIER: com.hmatt1.launcherboard.Widget
+      PRODUCT_BUNDLE_IDENTIFIER: com.hmatt1.shortcutlauncherwidget.Widget
+      DEVELOPMENT_TEAM: FHMS65N3XS
+      CODE_SIGN_STYLE: Automatic
       SKIP_INSTALL: "YES"
       TARGETED_DEVICE_FAMILY: "1"
       SWIFT_VERSION: "5.0"

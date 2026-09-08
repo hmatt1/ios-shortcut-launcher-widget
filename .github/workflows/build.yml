@@ -26,12 +26,20 @@ jobs:
       - name: Generate Xcode Project
         run: xcodegen generate
 
-      - name: Build unsigned IPA
+      - name: Build and Upload to TestFlight
+        env:
+          APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+          APPSTORE_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+          APPSTORE_P8_KEY: ${{ secrets.APPSTORE_P8_KEY }}
         run: |
-          # A tag names the version; anything else is not a release and says so.
           VERSION="${GITHUB_REF_NAME#v}"
           printf '%s' "$VERSION" | grep -Eq '^[0-9]+(\.[0-9]+)*$' || VERSION="0.0.0"
 
+          # 1. Setup App Store Connect API Key for xcodebuild
+          mkdir -p ~/.appstoreconnect/private_keys/
+          echo "$APPSTORE_P8_KEY" > ~/.appstoreconnect/private_keys/AuthKey_${APPSTORE_KEY_ID}.p8
+
+          # 2. Archive the app
           xcodebuild clean archive \
             -project LauncherBoard.xcodeproj \
             -scheme LauncherBoard \
@@ -39,36 +47,51 @@ jobs:
             -archivePath LauncherBoard.xcarchive \
             MARKETING_VERSION="$VERSION" \
             CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+            -allowProvisioningUpdates \
+            -authenticationKeyID $APPSTORE_KEY_ID \
+            -authenticationKeyIssuerID $APPSTORE_ISSUER_ID
 
-          mkdir Payload
-          cp -R LauncherBoard.xcarchive/Products/Applications/LauncherBoard.app Payload/
-          
-          # Inject entitlements into the unsigned binaries
-          ldid -SApp/LauncherBoard.entitlements Payload/LauncherBoard.app/LauncherBoard
-          ldid -SWidget/LauncherBoardWidget.entitlements Payload/LauncherBoard.app/PlugIns/LauncherBoardWidget.appex/LauncherBoardWidget
-          
-          zip -qr LauncherBoard.ipa Payload
+          # 3. Create ExportOptions.plist
+          cat <<EOF > exportOptions.plist
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store</string>
+              <key>manageAppVersionAndBuildNumber</key>
+              <true/>
+              <key>uploadSymbols</key>
+              <true/>
+          </dict>
+          </plist>
+          EOF
 
-      - name: Verify injected entitlements
-        run: |
-          echo "==== Dumping App Entitlements ===="
-          ldid -e Payload/LauncherBoard.app/LauncherBoard
-          
-          echo "==== Dumping Widget Entitlements ===="
-          ldid -e Payload/LauncherBoard.app/PlugIns/LauncherBoardWidget.appex/LauncherBoardWidget
+          # 4. Export the IPA
+          xcodebuild -exportArchive \
+            -archivePath LauncherBoard.xcarchive \
+            -exportOptionsPlist exportOptions.plist \
+            -exportPath export \
+            -allowProvisioningUpdates \
+            -authenticationKeyID $APPSTORE_KEY_ID \
+            -authenticationKeyIssuerID $APPSTORE_ISSUER_ID
+
+          # 5. Upload to TestFlight
+          xcrun altool --upload-app \
+            -f export/LauncherBoard.ipa \
+            -t ios \
+            --apiKey $APPSTORE_KEY_ID \
+            --apiIssuer $APPSTORE_ISSUER_ID
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         with:
           name: LauncherBoard-IPA
-          path: LauncherBoard.ipa
+          path: export/LauncherBoard.ipa
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: LauncherBoard.ipa
+          files: export/LauncherBoard.ipa
