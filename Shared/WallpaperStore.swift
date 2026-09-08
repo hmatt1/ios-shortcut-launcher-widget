@@ -44,4 +44,17 @@ final class WallpaperStore: ObservableObject {
             }
         }
     }
+    
+    static func getWallpaper() -> (image: UIImage, screen: CGSize)? {
+        let defaults = AppGroup.defaults
+        if let data = defaults?.data(forKey: "wallpaperImageData"),
+           let img = UIImage(data: data) {
+            let w = defaults?.double(forKey: "wallpaperScreenWidth") ?? 0
+            let h = defaults?.double(forKey: "wallpaperScreenHeight") ?? 0
+            if w > 0 && h > 0 {
+                return (img, CGSize(width: w, height: h))
+            }
+        }
+        return nil
+    }
 }

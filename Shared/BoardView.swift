@@ -34,9 +34,7 @@ struct BoardBackground: View {
     let family: BoardSize
 
     var isAppPreview: Bool = false
-
-    @ObservedObject private var store = WallpaperStore.shared
-
+    
     var body: some View {
         if accented {
             Color.clear
@@ -45,8 +43,7 @@ struct BoardBackground: View {
             case .theme:
                 themeBackground
             case .liquidGlass:
-                Rectangle()
-                    .fill(.regularMaterial)
+                Color.clear
             case .glassTiles, .transparent:
                 transparentBackground
             }
@@ -75,12 +72,12 @@ struct BoardBackground: View {
             Color.clear
         } else {
             GeometryReader { proxy in
-                if let img = store.image, let screen = store.screenBounds {
-                    let crop = cropOffset(for: position, widgetSize: proxy.size, screen: screen)
-                    Image(uiImage: img)
+                if let wp = WallpaperStore.getWallpaper() {
+                    let crop = cropOffset(for: position, widgetSize: proxy.size, screen: wp.screen)
+                    Image(uiImage: wp.image)
                         .resizable()
                         .scaledToFill()
-                        .frame(width: screen.width, height: screen.height)
+                        .frame(width: wp.screen.width, height: wp.screen.height)
                         .offset(x: crop.width, y: crop.height)
                 } else {
                     themeBackground
