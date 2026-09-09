@@ -122,33 +122,61 @@ struct WallpaperCrop: View {
     }
 
     private func cropOffset(for pos: WidgetPosition, widgetSize: CGSize, screen: CGSize) -> CGSize {
-        // Approximate the grid spacing based on actual device dimensions
-        let hMargin = (screen.width - (widgetSize.width * (family == .small ? 2 : 1))) / (family == .small ? 3 : 2)
-        let vGap = hMargin // Typically horizontal and vertical gaps are identical
-        let topMargin: CGFloat = screen.height >= 844 ? 76 : (screen.height >= 812 ? 60 : 47) // Rough safe area + padding
+        let metrics: (left: CGFloat, right: CGFloat, top: CGFloat, middle: CGFloat, bottom: CGFloat)
+        
+        switch Int(screen.height) {
+        case 956: // 16 Pro Max
+            metrics = (left: 38.0, right: 232.0, top: 92.0, middle: 304.0, bottom: 516.0)
+        case 932: // 14/15 Pro Max, 14/15/16 Plus
+            metrics = (left: 32.66, right: 227.0, top: 84.0, middle: 296.0, bottom: 508.0)
+        case 874: // 16 Pro
+            metrics = (left: 29.0, right: 211.0, top: 87.0, middle: 290.66, bottom: 495.0)
+        case 852: // 14 Pro, 15, 16
+            metrics = (left: 27.0, right: 208.0, top: 80.0, middle: 276.0, bottom: 472.0)
+        case 926: // 12/13 Pro Max, 14 Plus
+            metrics = (left: 32.0, right: 226.0, top: 82.0, middle: 294.0, bottom: 506.0)
+        case 896: // 11 Pro Max, XS Max, XR, 11
+            metrics = (left: 27.0, right: 218.0, top: 76.0, middle: 286.0, bottom: 496.0)
+        case 844: // 12, 13, 14, 12/13 Pro
+            metrics = (left: 26.0, right: 206.0, top: 77.0, middle: 273.0, bottom: 469.0)
+        case 812: // X, XS, 11 Pro, 12/13 mini
+            metrics = (left: 23.0, right: 197.0, top: 71.0, middle: 261.0, bottom: 451.0)
+        case 667: // SE2, SE3, 6, 7, 8
+            metrics = (left: 27.0, right: 200.0, top: 30.0, middle: 206.0, bottom: 382.0)
+        default:
+            let hGap: CGFloat = 22
+            let leftMargin = (screen.width - (widgetSize.width > 200 ? widgetSize.width : (widgetSize.width * 2 + hGap))) / 2
+            let safeMargin = max(leftMargin, 22)
+            metrics = (
+                left: safeMargin, 
+                right: screen.width - safeMargin - widgetSize.width, 
+                top: 76.0, 
+                middle: 76.0 + widgetSize.height + hGap, 
+                bottom: 76.0 + (widgetSize.height + hGap) * 2
+            )
+        }
         
         var x: CGFloat = 0
         var y: CGFloat = 0
         
-        // Calculate X
         switch pos {
-        case .topLeft, .middleLeft, .bottomLeft, .top, .middle, .bottom:
-            x = hMargin
+        case .topLeft, .middleLeft, .bottomLeft:
+            x = metrics.left
         case .topRight, .middleRight, .bottomRight:
-            x = screen.width - hMargin - widgetSize.width
+            x = metrics.right
+        case .top, .middle, .bottom:
+            x = metrics.left
         }
         
-        // Calculate Y
         switch pos {
         case .topLeft, .topRight, .top:
-            y = topMargin
+            y = metrics.top
         case .middleLeft, .middleRight, .middle:
-            y = topMargin + widgetSize.height + vGap
+            y = metrics.middle
         case .bottomLeft, .bottomRight, .bottom:
-            y = topMargin + (widgetSize.height + vGap) * 2
+            y = metrics.bottom
         }
         
-        // Move image negatively so the target area falls under the widget frame (0,0)
         return CGSize(width: -x, height: -y)
     }
 }
