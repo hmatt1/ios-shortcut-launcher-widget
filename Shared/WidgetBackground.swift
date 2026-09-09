@@ -20,7 +20,7 @@ func backgroundPlan(style: BackgroundStyle, surface: BackgroundSurface) -> Backg
         switch style {
         case .liquidGlass: return .previewMaterial
         case .theme: return .theme
-        case .transparent, .glassTiles: return .removed
+        case .transparent, .glassTiles: return .wallpaperCrop
         }
 
     case let .widget(showsContainerBackground, renderingMode):
