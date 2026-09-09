@@ -79,6 +79,41 @@ public class BoardThemeStore: ObservableObject {
         themes[index] = theme
         save()
     }
+
+    /// Adds any built-in theme whose exact colors aren't already in the list.
+    /// Never overwrites or deletes: an edited built-in is left as-is and the
+    /// original is appended as a new theme, named "<Name> (Original)" when the
+    /// plain name is already taken.
+    public func restoreDefaultThemes() {
+        for defaultTheme in BoardThemeStore.createDefaultThemes() {
+            if themes.contains(where: { $0.spec == defaultTheme.spec }) { continue }
+            // Reuse the built-in's stable id only when nothing holds it (it was
+            // deleted, not edited), so presets pointing at it reconnect.
+            let idTaken = themes.contains(where: { $0.id == defaultTheme.id })
+            let id = idTaken ? UUID() : defaultTheme.id
+            themes.append(BoardTheme(id: id, name: availableName(for: defaultTheme.name), spec: defaultTheme.spec))
+        }
+        save()
+    }
+
+    /// Whether any built-in theme's colors are missing from the list — i.e.
+    /// whether `restoreDefaultThemes()` would add anything.
+    public var canRestoreDefaultThemes: Bool {
+        BoardThemeStore.createDefaultThemes().contains { defaultTheme in
+            !themes.contains { $0.spec == defaultTheme.spec }
+        }
+    }
+
+    /// `base` if unused, otherwise `base (Original)`, then `base (Original 2)`, and so on.
+    private func availableName(for base: String) -> String {
+        let taken = Set(themes.map(\.name))
+        if !taken.contains(base) { return base }
+        let tagged = "\(base) (Original)"
+        if !taken.contains(tagged) { return tagged }
+        var n = 2
+        while taken.contains("\(base) (Original \(n))") { n += 1 }
+        return "\(base) (Original \(n))"
+    }
     
     public func delete(id: UUID) {
         guard themes.count > 1 else { return }

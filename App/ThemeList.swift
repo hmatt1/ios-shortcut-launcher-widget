@@ -4,7 +4,7 @@ struct ThemeListView: View {
     @ObservedObject var store = BoardThemeStore.shared
     @Binding var selectedId: String
     @Binding var isPresented: Bool
-    
+
     var body: some View {
         NavigationStack {
             List {
@@ -59,6 +59,18 @@ struct ThemeListView: View {
                 }
                 .onDelete(perform: deleteItems)
                 .onMove(perform: store.reorder)
+
+                if store.canRestoreDefaultThemes {
+                    Section {
+                        Button {
+                            store.restoreDefaultThemes()
+                        } label: {
+                            Label("Restore Default Themes", systemImage: "arrow.counterclockwise")
+                        }
+                    } footer: {
+                        Text("Adds the built-in themes back to the list. A theme you've edited is kept as-is and the original is re-added as a new theme, e.g. \"Midnight (Original)\".")
+                    }
+                }
             }
             .navigationTitle("Themes")
             .navigationBarTitleDisplayMode(.inline)
