@@ -74,7 +74,7 @@ final class WallpaperStore: ObservableObject {
         }
     }
     
-    static func getWallpaper() -> Wallpaper? {
+    nonisolated static func getWallpaper() -> Wallpaper? {
         let defaults = AppGroup.defaults
         if let data = defaults?.data(forKey: "wallpaperImageData"),
            let img = UIImage(data: data) {
