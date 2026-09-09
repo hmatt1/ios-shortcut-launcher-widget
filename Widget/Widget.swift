@@ -41,6 +41,50 @@ extension BoardSize {
     }
 }
 
+struct DynamicWidgetBackground<Content: View>: View {
+    let style: BackgroundStyle
+    let spec: ThemeSpec
+    let position: WidgetPosition
+    let family: BoardSize
+    let widgetContent: Content
+    
+    @Environment(\.widgetRenderingMode) var renderingMode
+
+    var body: some View {
+        let accented = renderingMode != .fullColor
+        
+        if accented {
+            widgetContent
+                .containerBackground(.background, for: .widget)
+        } else {
+            applySelectedTheme()
+        }
+    }
+
+    @ViewBuilder
+    func applySelectedTheme() -> some View {
+        switch style {
+        case .liquidGlass: // System Default
+            widgetContent
+                .containerBackground(.background, for: .widget)
+        case .theme, .transparent, .glassTiles:
+            widgetContent
+                .background {
+                    BoardBackground(
+                        spec: spec,
+                        accented: false,
+                        style: style,
+                        position: position,
+                        family: family
+                    )
+                }
+                .containerBackground(for: .widget) {
+                    Color.clear
+                }
+        }
+    }
+}
+
 struct LauncherWidgetView: View {
     let entry: LauncherEntry
 
@@ -72,41 +116,29 @@ struct LauncherWidgetView: View {
         let grid = resolved.grid
         let names = Array(rawNames.prefix(resolved.visibleSlots))
 
-        Group {
-            if names.isEmpty {
-                BoardEmptyState(spec: preset.activeSpec, accented: accented)
-            } else {
-                BoardView(grid: grid, count: names.count) { index, col, row in
-                    if sample.isEmpty {
-                        Button(intent: RunSystemShortcutIntent(shortcut: slots[index])) {
+        DynamicWidgetBackground(
+            style: preset.background,
+            spec: preset.activeSpec,
+            position: entry.configuration.widgetPosition,
+            family: size,
+            widgetContent: Group {
+                if names.isEmpty {
+                    BoardEmptyState(spec: preset.activeSpec, accented: accented)
+                } else {
+                    BoardView(grid: grid, count: names.count) { index, col, row in
+                        if sample.isEmpty {
+                            Button(intent: RunSystemShortcutIntent(shortcut: slots[index])) {
+                                face(name: names[index], index: index, col: col, row: row, grid: grid, accented: accented, spec: preset.activeSpec, style: preset.background)
+                            }
+                            .buttonStyle(.plain)
+                        } else {
                             face(name: names[index], index: index, col: col, row: row, grid: grid, accented: accented, spec: preset.activeSpec, style: preset.background)
                         }
-                        .buttonStyle(.plain)
-                    } else {
-                        face(name: names[index], index: index, col: col, row: row, grid: grid, accented: accented, spec: preset.activeSpec, style: preset.background)
                     }
                 }
             }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background {
-            BoardBackground(
-                spec: preset.activeSpec,
-                accented: accented,
-                style: preset.background,
-                position: entry.configuration.widgetPosition,
-                family: size
-            )
-        }
-        .containerBackground(for: .widget) {
-            BoardBackground(
-                spec: preset.activeSpec,
-                accented: accented,
-                style: preset.background,
-                position: entry.configuration.widgetPosition,
-                family: size
-            )
-        }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        )
     }
 
     private func face(name: String, index: Int, col: Int, row: Int, grid: BoardGrid, accented: Bool, spec: ThemeSpec, style: BackgroundStyle) -> SlotFace {

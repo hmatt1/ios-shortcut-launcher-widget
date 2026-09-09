@@ -11,10 +11,10 @@ public enum BackgroundStyle: String, Codable, CaseIterable, Sendable {
     
     var displayName: String {
         switch self {
-        case .theme: return "Theme (Solid)"
-        case .liquidGlass: return "Liquid Glass (Container)"
-        case .glassTiles: return "Liquid Glass (Buttons)"
-        case .transparent: return "Transparent"
+        case .theme: return "Solid Theme"
+        case .liquidGlass: return "System Default"
+        case .glassTiles: return "Glass Buttons"
+        case .transparent: return "Transparent (Wallpaper)"
         }
     }
 }

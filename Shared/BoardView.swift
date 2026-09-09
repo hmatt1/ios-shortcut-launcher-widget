@@ -43,9 +43,10 @@ struct BoardBackground: View {
             case .theme:
                 themeBackground
             case .liquidGlass:
-                ZStack {
-                    transparentBackground
+                if isAppPreview {
                     Rectangle().fill(.ultraThinMaterial)
+                } else {
+                    Color.clear
                 }
             case .glassTiles, .transparent:
                 transparentBackground
