@@ -123,6 +123,7 @@ struct PresetEditorView: View {
                             Text("S").tag(BoardSize.small)
                             Text("M").tag(BoardSize.medium)
                             Text("L").tag(BoardSize.large)
+                            Text("XL").tag(BoardSize.extraLarge)
                         }
                         .pickerStyle(.segmented)
                         

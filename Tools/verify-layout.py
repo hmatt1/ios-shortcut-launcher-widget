@@ -22,13 +22,14 @@ import math
 import sys
 
 # BoardSize.canvas, the 320x568pt layout
-CANVAS = {"small": (141, 141), "medium": (291, 141), "large": (291, 299)}
+CANVAS = {"small": (141, 141), "medium": (291, 141), "large": (291, 299), "extraLarge": (291, 457)}
 
 # Every iPhone widget canvas row Apple publishes, smallest first.
 DEVICES = {
     "small": [(141, 141), (148, 148), (155, 155), (158, 158), (162, 162), (169, 169), (170, 170)],
     "medium": [(291, 141), (321, 148), (329, 155), (338, 158), (344, 162), (360, 169), (364, 170)],
     "large": [(291, 299), (321, 324), (329, 345), (338, 354), (344, 366), (360, 379), (364, 382)],
+    "extraLarge": [(291, 457), (321, 500), (329, 535), (338, 550), (344, 570), (360, 589), (364, 594)],
 }
 
 # (marginX, marginY, spacingX, spacingY, paddingX, paddingY)
@@ -132,7 +133,7 @@ def main():
     checks = 0
 
     for name_length in (4, 6, 10, 15, 20):
-        for size in ["small", "medium", "large"]:
+        for size in ["small", "medium", "large", "extraLarge"]:
             for slots in range(1, 13):
                 for req_cols in range(0, 7):
                     cols = auto_columns(slots, size) if req_cols == 0 else req_cols

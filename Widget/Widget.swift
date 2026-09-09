@@ -37,6 +37,7 @@ extension BoardSize {
         switch family {
         case .systemSmall: self = .small
         case .systemMedium: self = .medium
+        case .systemExtraLarge: self = .extraLarge
         default: self = .large
         }
     }
@@ -130,7 +131,7 @@ struct LauncherBoardWidget: Widget {
         }
         .configurationDisplayName("Shortcut Launcher")
         .description("Run your shortcuts from the Home Screen.")
-        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .systemExtraLarge])
         .contentMarginsDisabled()
     }
 }

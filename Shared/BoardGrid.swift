@@ -6,12 +6,14 @@ enum BoardSize: CaseIterable, Sendable {
     case small
     case medium
     case large
+    case extraLarge
 
     var displayName: String {
         switch self {
         case .small: return "Small"
         case .medium: return "Medium"
         case .large: return "Large"
+        case .extraLarge: return "Extra Large"
         }
     }
 
@@ -24,6 +26,7 @@ enum BoardSize: CaseIterable, Sendable {
         case .small: return CGSize(width: 141, height: 141)
         case .medium: return CGSize(width: 291, height: 141)
         case .large: return CGSize(width: 291, height: 299)
+        case .extraLarge: return CGSize(width: 291, height: 457)
         }
     }
 }
@@ -132,7 +135,7 @@ struct BoardGrid: Sendable {
             return slots <= 3 ? 1 : 2
         case .medium:
             return slots <= 3 ? slots : (slots == 4 ? 2 : 3)
-        case .large:
+        case .large, .extraLarge:
             return slots <= 3 ? 1 : balanced(slots)
         }
     }
