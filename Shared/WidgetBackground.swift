@@ -63,7 +63,7 @@ struct WidgetBackground: ViewModifier {
             Color.clear
 
         case .systemDefault:
-            Rectangle().fill(.background)
+            Rectangle().fill(.regularMaterial)
 
         case .theme:
             ThemeBackground(spec: spec)
@@ -189,7 +189,7 @@ struct PreviewBackground: View {
         case .removed:
             Color.clear
         case .systemDefault:
-            Rectangle().fill(.background)
+            Rectangle().fill(.regularMaterial)
         case .theme:
             ThemeBackground(spec: spec)
         case .wallpaperCrop:
