@@ -9,17 +9,12 @@ enum BackgroundPlan: Equatable {
     case previewMaterial
 }
 
-enum BackgroundSurface {
-    case widget
+enum BackgroundSurface: Equatable {
+    case widget(showsContainerBackground: Bool, renderingMode: WidgetRenderingMode)
     case appPreview
 }
 
-func backgroundPlan(
-    style: BackgroundStyle,
-    surface: BackgroundSurface,
-    showsContainerBackground: Bool,
-    renderingMode: WidgetRenderingMode
-) -> BackgroundPlan {
+func backgroundPlan(style: BackgroundStyle, surface: BackgroundSurface) -> BackgroundPlan {
     switch surface {
     case .appPreview:
         switch style {
@@ -28,7 +23,7 @@ func backgroundPlan(
         case .transparent, .glassTiles: return .removed
         }
 
-    case .widget:
+    case let .widget(showsContainerBackground, renderingMode):
         guard showsContainerBackground else { return .removed }
         guard renderingMode == .fullColor else { return .systemDefault }
 
@@ -60,9 +55,7 @@ struct WidgetBackground: ViewModifier {
     private var layer: some View {
         let plan = backgroundPlan(
             style: style,
-            surface: .widget,
-            showsContainerBackground: showsContainerBackground,
-            renderingMode: renderingMode
+            surface: .widget(showsContainerBackground: showsContainerBackground, renderingMode: renderingMode)
         )
 
         switch plan {
@@ -189,9 +182,7 @@ struct PreviewBackground: View {
     var body: some View {
         let plan = backgroundPlan(
             style: style,
-            surface: .appPreview,
-            showsContainerBackground: true,
-            renderingMode: .fullColor
+            surface: .appPreview
         )
 
         switch plan {
