@@ -19,17 +19,37 @@ final class WallpaperStore: ObservableObject {
         load()
     }
     
-    func save(image: UIImage, screenBounds: CGSize) {
-        self.image = image
+        func save(image: UIImage, screenBounds: CGSize) {
+        let resizedImage = resize(image: image, toFill: screenBounds)
+        self.image = resizedImage
         self.screenBounds = screenBounds
         
-        // Downsample to a reasonable size if needed, but JPEG compression is usually fine.
-        if let data = image.jpegData(compressionQuality: 0.8) {
+        if let data = resizedImage.jpegData(compressionQuality: 0.8) {
             defaults?.set(data, forKey: imageDataKey)
             defaults?.set(Double(screenBounds.width), forKey: screenWidthKey)
             defaults?.set(Double(screenBounds.height), forKey: screenHeightKey)
         }
     }
+
+    private func resize(image: UIImage, toFill targetSize: CGSize) -> UIImage {
+        let size = image.size
+        let widthRatio  = targetSize.width  / size.width
+        let heightRatio = targetSize.height / size.height
+        let ratio = max(widthRatio, heightRatio)
+        
+        if ratio >= 1.0 { return image }
+        
+        let newSize = CGSize(width: size.width * ratio, height: size.height * ratio)
+        let rect = CGRect(origin: .zero, size: newSize)
+        
+        UIGraphicsBeginImageContextWithOptions(newSize, false, 2.0)
+        image.draw(in: rect)
+        let newImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        
+        return newImage ?? image
+    }
+
     
     func load() {
         if let data = defaults?.data(forKey: imageDataKey),

@@ -185,6 +185,7 @@ struct PresetEditorView: View {
                                        let uiImage = UIImage(data: data) {
                                         await MainActor.run {
                                             wallpaperStore.save(image: uiImage, screenBounds: UIScreen.main.bounds.size)
+                                            WidgetCenter.shared.reloadAllTimelines()
                                         }
                                     }
                                 }
