@@ -2,6 +2,15 @@ import Foundation
 import UIKit
 import SwiftUI
 
+public struct Wallpaper: Equatable, Sendable {
+    public let image: UIImage
+    public let screen: CGSize
+    
+    public static func == (lhs: Wallpaper, rhs: Wallpaper) -> Bool {
+        lhs.screen == rhs.screen && lhs.image.size == rhs.image.size
+    }
+}
+
 @MainActor
 final class WallpaperStore: ObservableObject {
     static let shared = WallpaperStore()
@@ -65,14 +74,14 @@ final class WallpaperStore: ObservableObject {
         }
     }
     
-    static func getWallpaper() -> (image: UIImage, screen: CGSize)? {
+    static func getWallpaper() -> Wallpaper? {
         let defaults = AppGroup.defaults
         if let data = defaults?.data(forKey: "wallpaperImageData"),
            let img = UIImage(data: data) {
             let w = defaults?.double(forKey: "wallpaperScreenWidth") ?? 0
             let h = defaults?.double(forKey: "wallpaperScreenHeight") ?? 0
             if w > 0 && h > 0 {
-                return (img, CGSize(width: w, height: h))
+                return Wallpaper(image: img, screen: CGSize(width: w, height: h))
             }
         }
         return nil

@@ -403,14 +403,13 @@ struct PresetEditorView: View {
         }
         .frame(width: size.canvas.width, height: size.canvas.height)
         .background { 
-            BoardBackground(
-                spec: preset.activeSpec,
-                accented: false,
+            PreviewBackground(
                 style: preset.background,
+                spec: preset.activeSpec,
                 position: widgetPosition,
                 family: size,
-                isAppPreview: true
-            ) 
+                wallpaper: WallpaperStore.getWallpaper()
+            )
         }
         .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
         .overlay {

@@ -9,24 +9,25 @@ struct LauncherEntry: TimelineEntry {
     /// Names to draw instead of shortcuts. The gallery card and the redacted
     /// placeholder use it, because neither has a configuration to read.
     let sample: [String]
+    let wallpaper: Wallpaper?
 }
 
 struct LauncherProvider: AppIntentTimelineProvider {
     func placeholder(in context: Context) -> LauncherEntry {
-        LauncherEntry(date: Date(), configuration: LauncherIntent(), sample: BoardSample.names)
+        LauncherEntry(date: Date(), configuration: LauncherIntent(), sample: BoardSample.names, wallpaper: nil)
     }
 
     func snapshot(for configuration: LauncherIntent, in context: Context) async -> LauncherEntry {
         // The widget gallery asks for a snapshot before anything is configured.
         // Showing the empty state there would sell the widget as a blank card.
         let sample = context.isPreview && configuration.slots.isEmpty ? BoardSample.names : []
-        return LauncherEntry(date: Date(), configuration: configuration, sample: sample)
+        return LauncherEntry(date: Date(), configuration: configuration, sample: sample, wallpaper: WallpaperStore.getWallpaper())
     }
 
     func timeline(for configuration: LauncherIntent, in context: Context) async -> Timeline<LauncherEntry> {
         // The board only changes when the widget is edited, which reloads the
         // timeline anyway. One entry, never refreshed, spends no budget.
-        let entry = LauncherEntry(date: Date(), configuration: configuration, sample: [])
+        let entry = LauncherEntry(date: Date(), configuration: configuration, sample: [], wallpaper: WallpaperStore.getWallpaper())
         return Timeline(entries: [entry], policy: .never)
     }
 }
@@ -37,50 +38,6 @@ extension BoardSize {
         case .systemSmall: self = .small
         case .systemMedium: self = .medium
         default: self = .large
-        }
-    }
-}
-
-struct DynamicWidgetBackground<Content: View>: View {
-    let style: BackgroundStyle
-    let spec: ThemeSpec
-    let position: WidgetPosition
-    let family: BoardSize
-    let widgetContent: Content
-    
-    @Environment(\.widgetRenderingMode) var renderingMode
-
-    var body: some View {
-        let accented = renderingMode != .fullColor
-        
-        if accented {
-            widgetContent
-                .containerBackground(.background, for: .widget)
-        } else {
-            applySelectedTheme()
-        }
-    }
-
-    @ViewBuilder
-    func applySelectedTheme() -> some View {
-        switch style {
-        case .liquidGlass: // System Default
-            widgetContent
-                .containerBackground(.background, for: .widget)
-        case .theme, .transparent, .glassTiles:
-            widgetContent
-                .background {
-                    BoardBackground(
-                        spec: spec,
-                        accented: false,
-                        style: style,
-                        position: position,
-                        family: family
-                    )
-                }
-                .containerBackground(for: .widget) {
-                    Color.clear
-                }
         }
     }
 }
@@ -116,28 +73,29 @@ struct LauncherWidgetView: View {
         let grid = resolved.grid
         let names = Array(rawNames.prefix(resolved.visibleSlots))
 
-        DynamicWidgetBackground(
+        Group {
+            if names.isEmpty {
+                BoardEmptyState(spec: preset.activeSpec, accented: accented)
+            } else {
+                BoardView(grid: grid, count: names.count) { index, col, row in
+                    if sample.isEmpty {
+                        Button(intent: RunSystemShortcutIntent(shortcut: slots[index])) {
+                            face(name: names[index], index: index, col: col, row: row, grid: grid, accented: accented, spec: preset.activeSpec, style: preset.background)
+                        }
+                        .buttonStyle(.plain)
+                    } else {
+                        face(name: names[index], index: index, col: col, row: row, grid: grid, accented: accented, spec: preset.activeSpec, style: preset.background)
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .widgetBackground(
             style: preset.background,
             spec: preset.activeSpec,
             position: entry.configuration.widgetPosition,
             family: size,
-            widgetContent: Group {
-                if names.isEmpty {
-                    BoardEmptyState(spec: preset.activeSpec, accented: accented)
-                } else {
-                    BoardView(grid: grid, count: names.count) { index, col, row in
-                        if sample.isEmpty {
-                            Button(intent: RunSystemShortcutIntent(shortcut: slots[index])) {
-                                face(name: names[index], index: index, col: col, row: row, grid: grid, accented: accented, spec: preset.activeSpec, style: preset.background)
-                            }
-                            .buttonStyle(.plain)
-                        } else {
-                            face(name: names[index], index: index, col: col, row: row, grid: grid, accented: accented, spec: preset.activeSpec, style: preset.background)
-                        }
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            wallpaper: entry.wallpaper
         )
     }
 
