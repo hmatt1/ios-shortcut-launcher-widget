@@ -5,10 +5,10 @@ enum BackgroundPlan: Equatable {
     case removed
     case systemDefault
     case theme
-    /// Draw the pre-rendered wallpaper slice. In the widget this only fires for
-    /// the frosted variant; the perfect variant draws the slice as content
-    /// instead (see `LauncherWidgetView`) so the system's Liquid Glass never
-    /// composites over it.
+    /// Transparent style. The widget keeps its container background clear and
+    /// draws the pre-rendered wallpaper slice as content (see `LauncherWidgetView`)
+    /// so the system's Liquid Glass never composites over it. The app preview
+    /// draws the slice directly.
     case wallpaperCrop
     case previewMaterial
 }
@@ -44,10 +44,6 @@ struct WidgetBackground: ViewModifier {
     let spec: ThemeSpec
     let position: WidgetPosition
     let family: BoardSize
-    /// `true` renders the wallpaper slice as the container background so iOS
-    /// lays its Liquid Glass over it. `false` (perfect) keeps the container
-    /// clear because the slice is drawn as widget content elsewhere.
-    let frosted: Bool
 
     @Environment(\.showsWidgetContainerBackground) private var showsContainerBackground
     @Environment(\.widgetRenderingMode) private var renderingMode
@@ -76,12 +72,9 @@ struct WidgetBackground: ViewModifier {
             ThemeBackground(spec: spec)
 
         case .wallpaperCrop:
-            if frosted {
-                WallpaperCropImage(family: family, position: position, fallback: spec)
-                    .overlay { Rectangle().fill(.ultraThinMaterial) }
-            } else {
-                Color.clear
-            }
+            // The slice is drawn as widget content in `LauncherWidgetView`, so
+            // the container stays clear and the system never glasses it.
+            Color.clear
 
         case .previewMaterial:
             Rectangle().fill(.ultraThinMaterial)
@@ -94,15 +87,13 @@ extension View {
         style: BackgroundStyle,
         spec: ThemeSpec,
         position: WidgetPosition,
-        family: BoardSize,
-        frosted: Bool
+        family: BoardSize
     ) -> some View {
         modifier(WidgetBackground(
             style: style,
             spec: spec,
             position: position,
-            family: family,
-            frosted: frosted
+            family: family
         ))
     }
 }
@@ -146,14 +137,12 @@ struct ThemeBackground: View {
     }
 }
 
-/// The in-app preview. There is no system Liquid Glass here, so perfect and
-/// frosted differ only by the material wash.
+/// The in-app preview of the widget background.
 struct PreviewBackground: View {
     let style: BackgroundStyle
     let spec: ThemeSpec
     let position: WidgetPosition
     let family: BoardSize
-    let frosted: Bool
 
     var body: some View {
         let plan = backgroundPlan(style: style, surface: .appPreview)
@@ -166,12 +155,7 @@ struct PreviewBackground: View {
         case .theme:
             ThemeBackground(spec: spec)
         case .wallpaperCrop:
-            ZStack {
-                WallpaperCropImage(family: family, position: position, fallback: spec)
-                if frosted {
-                    Rectangle().fill(.ultraThinMaterial)
-                }
-            }
+            WallpaperCropImage(family: family, position: position, fallback: spec)
         case .previewMaterial:
             Rectangle().fill(.ultraThinMaterial)
         }

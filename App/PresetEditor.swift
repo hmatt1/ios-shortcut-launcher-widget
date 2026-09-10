@@ -181,12 +181,6 @@ struct PresetEditorView: View {
                         .pickerStyle(.segmented)
                         
                         if preset.background == .transparent {
-                            Picker("Blend", selection: $preset.frostedGlass) {
-                                Text("Perfect").tag(false)
-                                Text("Frosted Glass").tag(true)
-                            }
-                            .pickerStyle(.segmented)
-
                             PhotosPicker(selection: $wallpaperItem, matching: .images) {
                                 HStack {
                                     Text("Upload Wallpaper")
@@ -425,8 +419,7 @@ struct PresetEditorView: View {
                 style: preset.background,
                 spec: preset.activeSpec,
                 position: widgetPosition.wrappedValue,
-                family: size,
-                frosted: preset.frostedGlass
+                family: size
             )
         }
         .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))

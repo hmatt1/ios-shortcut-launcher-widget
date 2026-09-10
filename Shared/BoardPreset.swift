@@ -15,9 +15,6 @@ public struct BoardPreset: Codable, Sendable, Identifiable, Equatable {
     public var outerCornerRadius: CGFloat
     public var themeId: UUID
     public var background: BackgroundStyle
-    /// Only meaningful when `background == .transparent`. `false` blends the
-    /// wallpaper slice in exactly; `true` lays a glass wash over it.
-    public var frostedGlass: Bool
 
     public init(
         id: UUID = UUID(),
@@ -32,8 +29,7 @@ public struct BoardPreset: Codable, Sendable, Identifiable, Equatable {
         cornerRadius: CGFloat,
         outerCornerRadius: CGFloat? = nil,
         themeId: UUID,
-        background: BackgroundStyle,
-        frostedGlass: Bool = false
+        background: BackgroundStyle
     ) {
         self.id = id
         self.name = name
@@ -48,11 +44,10 @@ public struct BoardPreset: Codable, Sendable, Identifiable, Equatable {
         self.outerCornerRadius = outerCornerRadius ?? cornerRadius
         self.themeId = themeId
         self.background = background
-        self.frostedGlass = frostedGlass
     }
 
     enum CodingKeys: CodingKey {
-        case id, name, columns, marginX, marginY, spacingX, spacingY, paddingX, paddingY, cornerRadius, outerCornerRadius, themeId, theme, customTheme, background, frostedGlass
+        case id, name, columns, marginX, marginY, spacingX, spacingY, paddingX, paddingY, cornerRadius, outerCornerRadius, themeId, theme, customTheme, background
     }
 
     public init(from decoder: Decoder) throws {
@@ -71,7 +66,6 @@ public struct BoardPreset: Codable, Sendable, Identifiable, Equatable {
         // Lenient: a value written by an older build (e.g. a removed style) must
         // never throw here, or one bad preset drops the whole store.
         background = (try? container.decode(BackgroundStyle.self, forKey: .background)) ?? .theme
-        frostedGlass = (try? container.decode(Bool.self, forKey: .frostedGlass)) ?? false
         
         if let decodedThemeId = try container.decodeIfPresent(UUID.self, forKey: .themeId) {
             themeId = decodedThemeId
@@ -100,7 +94,6 @@ public struct BoardPreset: Codable, Sendable, Identifiable, Equatable {
         try container.encode(outerCornerRadius, forKey: .outerCornerRadius)
         try container.encode(themeId, forKey: .themeId)
         try container.encode(background, forKey: .background)
-        try container.encode(frostedGlass, forKey: .frostedGlass)
     }
 
     public var activeSpec: ThemeSpec {

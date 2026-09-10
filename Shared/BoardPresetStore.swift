@@ -120,8 +120,7 @@ public class BoardPresetStore: ObservableObject {
             cornerRadius: existing.cornerRadius,
             outerCornerRadius: existing.outerCornerRadius,
             themeId: existing.themeId,
-            background: existing.background,
-            frostedGlass: existing.frostedGlass
+            background: existing.background
         )
         if let index = presets.firstIndex(where: { $0.id == id }) {
             presets.insert(newPreset, at: index + 1)

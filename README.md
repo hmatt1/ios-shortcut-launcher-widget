@@ -61,7 +61,7 @@ Three styles: **Solid Color** (the theme background), **System Default** (a plai
 
 Transparent blends the widget into the wallpaper. iOS never lets a widget read the Home Screen, so the person uploads a screenshot of their wallpaper and picks which of nine slots the widget sits in. On upload the app normalises the screenshot to the device's exact native pixels — once, in the app process, with no JPEG pass and no rescale — then slices one small PNG per slot (`Shared/WidgetGeometry.swift` holds the per-device grid) into the App Group container. The widget loads only its single slice, so it never carries a full-screen bitmap into the extension's tight memory budget. `Tools/verify-widget-geometry.py` asserts every slice rectangle stays fully on screen.
 
-**Perfect** draws the slice as widget *content*, beneath the board, so the system's Liquid Glass never composites over it. **Frosted Glass** draws the slice as the container background and lays `.ultraThinMaterial` over it. A faint Liquid Glass rim around the widget itself is drawn by iOS 27 and is not app-removable; `Settings › Display & Brightness › Liquid Glass` is the only control over it.
+The slice is drawn as widget *content*, beneath the board, and the container background is kept clear, so the system's Liquid Glass never composites over it. A faint Liquid Glass rim around the widget itself is drawn by iOS 27 and is not app-removable; `Settings › Display & Brightness › Liquid Glass` is the only control over it.
 
 ## Build
 

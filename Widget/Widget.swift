@@ -74,16 +74,15 @@ struct LauncherWidgetView: View {
         let grid = resolved.grid
         let names = Array(rawNames.prefix(resolved.visibleSlots))
 
-        // Perfect transparent: draw the wallpaper slice as content, under the
-        // board, so iOS never lays Liquid Glass over it. Frosted transparent and
-        // every other style are handled by the container background.
-        let perfectTransparent = !accented
+        // Transparent: draw the wallpaper slice as content, under the board, so
+        // iOS never lays Liquid Glass over it. Every other style is handled by
+        // the container background.
+        let showsWallpaper = !accented
             && showsContainerBackground
             && preset.background == .transparent
-            && !preset.frostedGlass
 
         ZStack {
-            if perfectTransparent {
+            if showsWallpaper {
                 WallpaperCropImage(
                     family: size,
                     position: entry.configuration.widgetPosition,
@@ -113,8 +112,7 @@ struct LauncherWidgetView: View {
             style: preset.background,
             spec: preset.activeSpec,
             position: entry.configuration.widgetPosition,
-            family: size,
-            frosted: preset.frostedGlass
+            family: size
         )
     }
 
