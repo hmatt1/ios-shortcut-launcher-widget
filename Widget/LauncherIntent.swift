@@ -85,7 +85,7 @@ struct LauncherIntent: WidgetConfigurationIntent {
     var widgetPosition: WidgetPosition
 
     @Parameter(title: "Shortcuts")
-    var shortcuts: [SystemShortcut] = []
+    var shortcuts: [SystemShortcut]
 
     /// Chosen shortcuts in order, capped at what any board can show.
     var slots: [SystemShortcut] {
