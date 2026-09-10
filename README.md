@@ -51,9 +51,17 @@ Accented mode was designed first. When someone picks a tinted or clear Home Scre
 
 Tiles keep their rounded corners even at `Edge`, where there is no gap at all: at zero separation the corner notch is the only thing marking where one tap target ends and the next begins, and in accented mode every tile carries the same fill.
 
-Full color adds exactly one thing on top: a flat surface per tile and a background. No gradients on tiles, no strokes, no shadows, and no `Material` or `.glassEffect` anywhere. Liquid Glass belongs to the system.
+Full color adds exactly one thing on top: a flat surface per tile and a background. No gradients on tiles, no strokes, no shadows, and no `Material` or `.glassEffect` on a tile anywhere. Liquid Glass belongs to the system.
 
 Every accent in the three color themes clears 4.5:1 against its label color. Contrast is fixed in the palette and checked by `Tools/verify-layout.py`, never computed at runtime.
+
+## Background
+
+Three styles: **Solid Color** (the theme background), **System Default** (a plain system material), and **Transparent**.
+
+Transparent blends the widget into the wallpaper. iOS never lets a widget read the Home Screen, so the person uploads a screenshot of their wallpaper and picks which of nine slots the widget sits in. On upload the app normalises the screenshot to the device's exact native pixels — once, in the app process, with no JPEG pass and no rescale — then slices one small PNG per slot (`Shared/WidgetGeometry.swift` holds the per-device grid) into the App Group container. The widget loads only its single slice, so it never carries a full-screen bitmap into the extension's tight memory budget. `Tools/verify-widget-geometry.py` asserts every slice rectangle stays fully on screen.
+
+**Perfect** draws the slice as widget *content*, beneath the board, so the system's Liquid Glass never composites over it. **Frosted Glass** draws the slice as the container background and lays `.ultraThinMaterial` over it. A faint Liquid Glass rim around the widget itself is drawn by iOS 27 and is not app-removable; `Settings › Display & Brightness › Liquid Glass` is the only control over it.
 
 ## Build
 
@@ -78,14 +86,18 @@ gh release create v2.0.0 --generate-notes
 ## Files
 
 ```
-Shared/Theme.swift       five themes and three densities, as plain enums
-Shared/BoardGrid.swift   columns, rows, tile mode, touch-target clamp, type scale, sample names
-Shared/BoardView.swift   tiles, background, empty state
-App/App.swift            the whole app
-App/Assets.xcassets      app icon and accent color
-Widget/LauncherIntent.swift   fourteen parameters, AppEnum conformances
-Widget/Widget.swift      provider, entry view, widget
-Tools/verify-layout.py   re-derives the layout arithmetic and checks it
+Shared/Theme.swift            themes and densities, as plain enums
+Shared/BoardGrid.swift        columns, rows, tile mode, touch-target clamp, type scale, sample names
+Shared/BoardView.swift        tiles, empty state
+Shared/WidgetBackground.swift background resolver, wallpaper-slice view
+Shared/WidgetGeometry.swift   per-device widget grid; maps a slot to a wallpaper rectangle
+Shared/WallpaperStore.swift   normalises the screenshot and pre-renders one slice per slot
+App/App.swift                 the whole app
+App/Assets.xcassets           app icon and accent color
+Widget/LauncherIntent.swift   parameters, AppEnum conformances
+Widget/Widget.swift           provider, entry view, widget
+Tools/verify-layout.py           re-derives the layout arithmetic and checks it
+Tools/verify-widget-geometry.py  re-derives the wallpaper-slice rectangles and checks they stay on screen
 ```
 
 `Shared/` never imports AppIntents. `BoardView` takes a tile builder, so the widget wraps each tile in `Button(intent:)` and the app renders the same `SlotFace` inert.

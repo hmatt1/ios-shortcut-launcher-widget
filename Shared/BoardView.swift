@@ -37,8 +37,6 @@ struct SlotFace: View {
     let bottomLeadingRadius: CGFloat
     let bottomTrailingRadius: CGFloat
     let topTrailingRadius: CGFloat
-    let style: BackgroundStyle
-    let accented: Bool
 
     var body: some View {
         let shape = UnevenRoundedRectangle(
@@ -65,19 +63,9 @@ struct SlotFace: View {
                 alignment: mode == .row ? .leading : .center
             )
             .background {
-                if !accented && style == .glassTiles {
-                    shape
-                        .fill(.regularMaterial)
-                        .overlay(
-                            shape
-                                .fill(surface.opacity(0.15))
-                        )
-                        .padding(0.5)
-                } else {
-                    shape
-                        .fill(surface)
-                        .padding(0.5)
-                }
+                shape
+                    .fill(surface)
+                    .padding(0.5)
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(name)

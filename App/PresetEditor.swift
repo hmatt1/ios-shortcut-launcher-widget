@@ -61,8 +61,18 @@ struct PresetEditorView: View {
     
     @State private var preset: BoardPreset
     @State private var wallpaperItem: PhotosPickerItem?
-    @State private var widgetPosition: WidgetPosition = .topLeft
-    
+    /// Which slot the preview blends into. The real per-widget position is set
+    /// in the widget's Edit sheet; this only steers the in-app preview.
+    @AppStorage("previewWidgetPosition", store: AppGroup.defaults)
+    private var previewPositionRaw: String = WidgetPosition.topLeft.rawValue
+
+    private var widgetPosition: Binding<WidgetPosition> {
+        Binding(
+            get: { WidgetPosition(rawValue: previewPositionRaw) ?? .topLeft },
+            set: { previewPositionRaw = $0.rawValue }
+        )
+    }
+
     @ObservedObject private var wallpaperStore = WallpaperStore.shared
     @ObservedObject private var themeStore = BoardThemeStore.shared
     @State private var showingThemeList = false
@@ -170,12 +180,18 @@ struct PresetEditorView: View {
                         }
                         .pickerStyle(.segmented)
                         
-                        if preset.background == .transparent || preset.background == .glassTiles {
+                        if preset.background == .transparent {
+                            Picker("Blend", selection: $preset.frostedGlass) {
+                                Text("Perfect").tag(false)
+                                Text("Frosted Glass").tag(true)
+                            }
+                            .pickerStyle(.segmented)
+
                             PhotosPicker(selection: $wallpaperItem, matching: .images) {
                                 HStack {
                                     Text("Upload Wallpaper")
                                     Spacer()
-                                    if wallpaperStore.image != nil {
+                                    if wallpaperStore.hasWallpaper {
                                         Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
                                     }
                                 }
@@ -185,14 +201,17 @@ struct PresetEditorView: View {
                                     if let data = try? await newItem?.loadTransferable(type: Data.self),
                                        let uiImage = UIImage(data: data) {
                                         await MainActor.run {
-                                            wallpaperStore.save(image: uiImage, screenBounds: UIScreen.main.bounds.size)
-                                            WidgetCenter.shared.reloadAllTimelines()
+                                            wallpaperStore.save(
+                                                image: uiImage,
+                                                screenPoints: UIScreen.main.bounds.size,
+                                                scale: UIScreen.main.scale
+                                            )
                                         }
                                     }
                                 }
                             }
-                            
-                            Picker("Widget Position", selection: $widgetPosition) {
+
+                            Picker("Preview Position", selection: widgetPosition) {
                                 ForEach(WidgetPosition.allCases, id: \.self) { pos in
                                     Text(pos.displayName).tag(pos)
                                 }
@@ -397,19 +416,17 @@ struct PresetEditorView: View {
                 topLeadingRadius: grid.topLeadingRadius(col: col, row: row),
                 bottomLeadingRadius: grid.bottomLeadingRadius(col: col, row: row),
                 bottomTrailingRadius: grid.bottomTrailingRadius(col: col, row: row),
-                topTrailingRadius: grid.topTrailingRadius(col: col, row: row),
-                style: preset.background,
-                accented: false
+                topTrailingRadius: grid.topTrailingRadius(col: col, row: row)
             )
         }
         .frame(width: size.canvas.width, height: size.canvas.height)
-        .background { 
+        .background {
             PreviewBackground(
                 style: preset.background,
                 spec: preset.activeSpec,
-                position: widgetPosition,
+                position: widgetPosition.wrappedValue,
                 family: size,
-                wallpaper: WallpaperStore.getWallpaper()
+                frosted: preset.frostedGlass
             )
         }
         .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))

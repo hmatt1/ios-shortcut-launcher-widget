@@ -9,25 +9,24 @@ struct LauncherEntry: TimelineEntry {
     /// Names to draw instead of shortcuts. The gallery card and the redacted
     /// placeholder use it, because neither has a configuration to read.
     let sample: [String]
-    let wallpaper: Wallpaper?
 }
 
 struct LauncherProvider: AppIntentTimelineProvider {
     func placeholder(in context: Context) -> LauncherEntry {
-        LauncherEntry(date: Date(), configuration: LauncherIntent(), sample: BoardSample.names, wallpaper: nil)
+        LauncherEntry(date: Date(), configuration: LauncherIntent(), sample: BoardSample.names)
     }
 
     func snapshot(for configuration: LauncherIntent, in context: Context) async -> LauncherEntry {
         // The widget gallery asks for a snapshot before anything is configured.
         // Showing the empty state there would sell the widget as a blank card.
         let sample = context.isPreview && configuration.slots.isEmpty ? BoardSample.names : []
-        return LauncherEntry(date: Date(), configuration: configuration, sample: sample, wallpaper: WallpaperStore.getWallpaper())
+        return LauncherEntry(date: Date(), configuration: configuration, sample: sample)
     }
 
     func timeline(for configuration: LauncherIntent, in context: Context) async -> Timeline<LauncherEntry> {
         // The board only changes when the widget is edited, which reloads the
         // timeline anyway. One entry, never refreshed, spends no budget.
-        let entry = LauncherEntry(date: Date(), configuration: configuration, sample: [], wallpaper: WallpaperStore.getWallpaper())
+        let entry = LauncherEntry(date: Date(), configuration: configuration, sample: [])
         return Timeline(entries: [entry], policy: .never)
     }
 }
@@ -48,6 +47,7 @@ struct LauncherWidgetView: View {
 
     @Environment(\.widgetFamily) private var family
     @Environment(\.widgetRenderingMode) private var renderingMode
+    @Environment(\.showsWidgetContainerBackground) private var showsContainerBackground
 
     var body: some View {
         let size = BoardSize(family: family)
@@ -74,18 +74,36 @@ struct LauncherWidgetView: View {
         let grid = resolved.grid
         let names = Array(rawNames.prefix(resolved.visibleSlots))
 
-        Group {
-            if names.isEmpty {
-                BoardEmptyState(spec: preset.activeSpec, accented: accented)
-            } else {
-                BoardView(grid: grid, count: names.count) { index, col, row in
-                    if sample.isEmpty {
-                        Button(intent: RunSystemShortcutIntent(shortcut: slots[index])) {
-                            face(name: names[index], index: index, col: col, row: row, grid: grid, accented: accented, spec: preset.activeSpec, style: preset.background)
+        // Perfect transparent: draw the wallpaper slice as content, under the
+        // board, so iOS never lays Liquid Glass over it. Frosted transparent and
+        // every other style are handled by the container background.
+        let perfectTransparent = !accented
+            && showsContainerBackground
+            && preset.background == .transparent
+            && !preset.frostedGlass
+
+        ZStack {
+            if perfectTransparent {
+                WallpaperCropImage(
+                    family: size,
+                    position: entry.configuration.widgetPosition,
+                    fallback: preset.activeSpec
+                )
+            }
+
+            Group {
+                if names.isEmpty {
+                    BoardEmptyState(spec: preset.activeSpec, accented: accented)
+                } else {
+                    BoardView(grid: grid, count: names.count) { index, col, row in
+                        if sample.isEmpty {
+                            Button(intent: RunSystemShortcutIntent(shortcut: slots[index])) {
+                                face(name: names[index], index: index, col: col, row: row, grid: grid, accented: accented, spec: preset.activeSpec)
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            face(name: names[index], index: index, col: col, row: row, grid: grid, accented: accented, spec: preset.activeSpec)
                         }
-                        .buttonStyle(.plain)
-                    } else {
-                        face(name: names[index], index: index, col: col, row: row, grid: grid, accented: accented, spec: preset.activeSpec, style: preset.background)
                     }
                 }
             }
@@ -96,11 +114,11 @@ struct LauncherWidgetView: View {
             spec: preset.activeSpec,
             position: entry.configuration.widgetPosition,
             family: size,
-            wallpaper: entry.wallpaper
+            frosted: preset.frostedGlass
         )
     }
 
-    private func face(name: String, index: Int, col: Int, row: Int, grid: BoardGrid, accented: Bool, spec: ThemeSpec, style: BackgroundStyle) -> SlotFace {
+    private func face(name: String, index: Int, col: Int, row: Int, grid: BoardGrid, accented: Bool, spec: ThemeSpec) -> SlotFace {
         return SlotFace(
             name: name,
             surface: spec.surface(at: index, accented: accented),
@@ -112,9 +130,7 @@ struct LauncherWidgetView: View {
             topLeadingRadius: grid.topLeadingRadius(col: col, row: row),
             bottomLeadingRadius: grid.bottomLeadingRadius(col: col, row: row),
             bottomTrailingRadius: grid.bottomTrailingRadius(col: col, row: row),
-            topTrailingRadius: grid.topTrailingRadius(col: col, row: row),
-            style: style,
-            accented: accented
+            topTrailingRadius: grid.topTrailingRadius(col: col, row: row)
         )
     }
 }
