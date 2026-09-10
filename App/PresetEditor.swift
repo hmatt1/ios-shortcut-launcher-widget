@@ -137,7 +137,7 @@ struct PresetEditorView: View {
                         }
                         .pickerStyle(.segmented)
                         
-                        CustomStepper(title: "Preview Slots", value: $slots, range: 1...12, step: 1, stringValue: "\(slots)")
+                        CustomStepper(title: "Preview Slots", value: $slots, range: 1...BoardGrid.maxSlots, step: 1, stringValue: "\(slots)")
                     }
                     
                     Section("Layout") {

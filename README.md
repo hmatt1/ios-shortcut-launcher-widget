@@ -6,15 +6,15 @@ iOS 27. XcodeGen. Unsigned `.ipa` from GitHub Actions. No accounts, no purchases
 
 ## Configure
 
-Touch and hold the widget, choose **Edit Widget**. Fourteen rows:
+Touch and hold the widget, choose **Edit Widget**. Three rows:
 
 ```
-1 … 12    the shortcut for each tile
-Theme     Ink · Paper · Midnight · Aurora · Sunset
-Density   Edge · Compact · Roomy
+Preset     which board preset to draw
+Position   which slot it sits in, for the transparent background
+Shortcuts  a multi-select list, one tile per entry (up to 64)
 ```
 
-The number of shortcuts you assign is the slot count. Assign three and you get three tiles filling the widget, with no separate count to keep in sync. The sheet always lists twelve rows because an intent cannot know which family the widget was placed in, so a family shows the first however many it holds: four on small, six on medium, twelve on large.
+The number of shortcuts you choose is the slot count. Pick three and you get three tiles filling the widget, with no separate count to keep in sync. Because a widget cannot know its own family until it is placed, the board fits whatever you chose to whatever family it lands in, shrinking tiles as the count climbs; past `BoardGrid.maxSlots` (64) the overflow is dropped.
 
 Tiles are typographic. A tile shows the shortcut's own name, so it can never show the wrong icon, and there is nothing to type.
 

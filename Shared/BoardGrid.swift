@@ -50,6 +50,10 @@ enum TileMode: Equatable, Sendable {
 
 /// A resolved board. Everything the view layer needs, with no measurement.
 struct BoardGrid: Sendable {
+    /// The most tiles a board will lay out. Past this the widget simply drops
+    /// the overflow; a tile that small is unreadable anyway.
+    static let maxSlots = 64
+
     let columns: Int
     let rows: Int
     let mode: TileMode
@@ -62,9 +66,9 @@ struct BoardGrid: Sendable {
         longestName: Int,
         layout requestedLayout: BoardLayoutValues
     ) -> (grid: BoardGrid, visibleSlots: Int) {
-        
+
         let requestedSlots = max(1, count)
-        let slots = min(requestedSlots, 12)
+        let slots = min(requestedSlots, maxSlots)
         
         let cols = requestedLayout.columns == 0 ? columnCount(for: slots, size: size) : requestedLayout.columns
         let rows = Int(ceil(Double(slots) / Double(cols)))
@@ -130,6 +134,13 @@ struct BoardGrid: Sendable {
 
     private static func columnCount(for slots: Int, size: BoardSize) -> Int {
         guard slots > 1 else { return 1 }
+        // Past the hand-tuned range, fit the column count to the canvas aspect
+        // ratio so cells stay as square as the family allows.
+        if slots > 12 {
+            let aspect = Double(size.canvas.width / size.canvas.height)
+            let cols = (Double(slots) * aspect).squareRoot().rounded()
+            return min(max(Int(cols), 1), slots)
+        }
         switch size {
         case .small:
             return slots <= 3 ? 1 : 2

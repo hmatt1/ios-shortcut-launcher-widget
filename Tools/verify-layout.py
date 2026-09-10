@@ -66,6 +66,10 @@ def balanced(slots):
 
 def auto_columns(slots, size):
     if slots <= 1: return 1
+    if slots > 12:
+        aspect = CANVAS[size][0] / CANVAS[size][1]
+        cols = math.floor((slots * aspect) ** 0.5 + 0.5)  # mirrors Swift .rounded()
+        return min(max(int(cols), 1), slots)
     if size == "small": return 1 if slots <= 3 else 2
     if size == "medium": return slots if slots <= 3 else (2 if slots == 4 else 3)
     return 1 if slots <= 3 else balanced(slots)
@@ -134,7 +138,7 @@ def main():
 
     for name_length in (4, 6, 10, 15, 20):
         for size in ["small", "medium", "large", "extraLarge"]:
-            for slots in range(1, 13):
+            for slots in range(1, 65):
                 for req_cols in range(0, 7):
                     cols = auto_columns(slots, size) if req_cols == 0 else req_cols
                     rows = math.ceil(slots / cols)

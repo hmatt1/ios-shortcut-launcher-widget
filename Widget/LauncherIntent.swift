@@ -66,8 +66,11 @@ struct BoardPresetQuery: EntityQuery {
     }
 }
 
-/// Fourteen rows: twelve shortcuts and two looks. The number of assigned
-/// shortcuts is the slot count, so no control can contradict another.
+/// Three rows: a preset, a transparent-blend position, and one multi-select
+/// list of shortcuts. The list is a single parameter, so it is not bound by the
+/// old one-row-per-shortcut ceiling; a widget shows as many as its family can
+/// fit, up to `BoardGrid.maxSlots`. The number of chosen shortcuts is the slot
+/// count, so no control can contradict another.
 struct LauncherIntent: WidgetConfigurationIntent {
     static let title: LocalizedStringResource = "Shortcut Launcher"
 
@@ -81,58 +84,11 @@ struct LauncherIntent: WidgetConfigurationIntent {
     @Parameter(title: "Position (If Transparent)", default: .topLeft)
     var widgetPosition: WidgetPosition
 
-    @Parameter(title: "1")
-    var shortcut1: SystemShortcut?
+    @Parameter(title: "Shortcuts")
+    var shortcuts: [SystemShortcut] = []
 
-    @Parameter(title: "2")
-    var shortcut2: SystemShortcut?
-
-    @Parameter(title: "3")
-    var shortcut3: SystemShortcut?
-
-    @Parameter(title: "4")
-    var shortcut4: SystemShortcut?
-
-    @Parameter(title: "5")
-    var shortcut5: SystemShortcut?
-
-    @Parameter(title: "6")
-    var shortcut6: SystemShortcut?
-
-    @Parameter(title: "7")
-    var shortcut7: SystemShortcut?
-
-    @Parameter(title: "8")
-    var shortcut8: SystemShortcut?
-
-    @Parameter(title: "9")
-    var shortcut9: SystemShortcut?
-
-    @Parameter(title: "10")
-    var shortcut10: SystemShortcut?
-
-    @Parameter(title: "11")
-    var shortcut11: SystemShortcut?
-
-    @Parameter(title: "12")
-    var shortcut12: SystemShortcut?
-
-    /// Assigned shortcuts in slot order, holes closed.
+    /// Chosen shortcuts in order, capped at what any board can show.
     var slots: [SystemShortcut] {
-        let all: [SystemShortcut?] = [
-            shortcut1,
-            shortcut2,
-            shortcut3,
-            shortcut4,
-            shortcut5,
-            shortcut6,
-            shortcut7,
-            shortcut8,
-            shortcut9,
-            shortcut10,
-            shortcut11,
-            shortcut12
-        ]
-        return all.compactMap { $0 }
+        Array(shortcuts.prefix(BoardGrid.maxSlots))
     }
 }
