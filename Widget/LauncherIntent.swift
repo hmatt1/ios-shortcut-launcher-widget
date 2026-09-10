@@ -84,11 +84,12 @@ struct LauncherIntent: WidgetConfigurationIntent {
     @Parameter(title: "Position (If Transparent)", default: .topLeft)
     var widgetPosition: WidgetPosition
 
+    // A WidgetConfigurationIntent requires every parameter to be optional.
     @Parameter(title: "Shortcuts")
-    var shortcuts: [SystemShortcut]
+    var shortcuts: [SystemShortcut]?
 
     /// Chosen shortcuts in order, capped at what any board can show.
     var slots: [SystemShortcut] {
-        Array(shortcuts.prefix(BoardGrid.maxSlots))
+        Array((shortcuts ?? []).prefix(BoardGrid.maxSlots))
     }
 }
