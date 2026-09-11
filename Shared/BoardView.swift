@@ -4,6 +4,15 @@ extension ThemeSpec {
     /// Tile fill. In accented mode the system keeps the opacity of translucent
     /// content and tints it, so a faint chip is what preserves the board's
     /// structure once the color is taken away.
+    ///
+    /// Monochrome themes (Ink, Paper — `accents` empty) reuse that same faint
+    /// chip in full color too: a deliberate ~1.2-1.3:1 tint against the
+    /// background, not a legibility target like the chromatic themes' accents.
+    /// At `Flush` density the corner notch between tiles carries the boundary
+    /// (see the README's "Rendering" section); at roomier densities the
+    /// margin/spacing gap does. `Tools/verify-layout.py`'s contrast checks are
+    /// scoped to chromatic themes for this reason, not because monochrome was
+    /// overlooked.
     func surface(at index: Int, accented: Bool) -> Color {
         if accented {
             return .white.opacity(0.18)
@@ -125,4 +134,70 @@ struct BoardEmptyState: View {
             .padding(.horizontal, 12)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
+}
+
+// MARK: - Previews
+
+/// Renders a full board for a given theme, density step and canvas — the same
+/// pipeline `PresetEditorView` and the widget use, but with no store
+/// dependency, so it's safe to preview without an App Group container.
+private func previewBoard(theme: Theme, densityId: String, size: BoardSize, slotCount: Int) -> some View {
+    let layout = DensityTemplate.all.first { $0.id == densityId }!.layout
+    let names = Array(BoardSample.names.prefix(slotCount))
+    let spec = theme.spec
+    let resolved = BoardGrid.resolve(
+        count: names.count,
+        size: size,
+        longestName: names.map(\.count).max() ?? 0,
+        layout: layout
+    )
+    let grid = resolved.grid
+
+    return BoardView(grid: grid, count: names.count) { index, col, row in
+        SlotFace(
+            name: names[index],
+            surface: spec.surface(at: index, accented: false),
+            label: spec.labelColor(at: index, accented: false),
+            mode: grid.mode,
+            font: grid.font,
+            paddingX: grid.layout.paddingX,
+            paddingY: grid.layout.paddingY,
+            topLeadingRadius: grid.topLeadingRadius(col: col, row: row),
+            bottomLeadingRadius: grid.bottomLeadingRadius(col: col, row: row),
+            bottomTrailingRadius: grid.bottomTrailingRadius(col: col, row: row),
+            topTrailingRadius: grid.topTrailingRadius(col: col, row: row)
+        )
+    }
+    .frame(width: size.canvas.width, height: size.canvas.height)
+    .background { ThemeBackground(spec: spec) }
+    .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+    .padding()
+}
+
+#Preview("Default — Midnight / Standard") {
+    previewBoard(theme: .midnight, densityId: "standard", size: .medium, slotCount: 6)
+}
+
+#Preview("Slate — Ink / Flush") {
+    previewBoard(theme: .ink, densityId: "flush", size: .medium, slotCount: 6)
+}
+
+#Preview("Panel — Aurora / Relaxed") {
+    previewBoard(theme: .aurora, densityId: "relaxed", size: .large, slotCount: 6)
+}
+
+#Preview("Field — Meadow / Open") {
+    previewBoard(theme: .meadow, densityId: "open", size: .large, slotCount: 9)
+}
+
+#Preview("Keypad — Sunset / Standard, small") {
+    previewBoard(theme: .sunset, densityId: "standard", size: .small, slotCount: 4)
+}
+
+#Preview("Empty state — Midnight") {
+    BoardEmptyState(spec: Theme.midnight.spec, accented: false)
+        .frame(width: BoardSize.medium.canvas.width, height: BoardSize.medium.canvas.height)
+        .background { ThemeBackground(spec: Theme.midnight.spec) }
+        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+        .padding()
 }

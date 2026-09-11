@@ -43,11 +43,11 @@ If an existing widget on a user's home screen was placed with the older version 
 python3 Tools/verify-layout.py
 ```
 
-That walks every family, shortcut count, explicit column count, template, published iPhone widget canvas and a range of name lengths, and asserts that no cell shrinks below 1pt, that the chosen text style still fits on every device rather than only on the smallest, that resolved values match requested values when space permits, and that every accent clears 4.5:1 against its label and 1.5:1 against both background stops. Run it after touching `Shared/BoardGrid.swift`, `Shared/BoardPreset.swift`, or `Shared/Theme.swift`.
+That walks every family, shortcut count, explicit column count, template, published iPhone widget canvas and a range of name lengths, and asserts that no cell shrinks below 1pt, that a tile's padded content area never shrinks below 1pt either (padding degrades toward 0 as a last resort, after spacing and margin, so it can never hide a name the way an undegraded padding could in row mode), that the chosen text style still fits on every device rather than only on the smallest, that resolved values match requested values when space permits, and that every accent clears 4.5:1 against its label and 1.5:1 against both background stops. Run it after touching `Shared/BoardGrid.swift`, `Shared/BoardPreset.swift`, or `Shared/Theme.swift`.
 
 ### Density templates
 
-Five bundled steps — `Flush`, `Hairline`, `Standard`, `Relaxed`, `Open` (`DensityTemplate.all` in `Shared/BoardPresetStore.swift`) — on one "breathing room" axis. Each step moves margin, spacing, padding, and corner radius together, so applying one gives a complete, coherent look rather than a set of independent sliders. Margin never falls below spacing (an even ladder: margin +4, spacing +3 per step); padding is kept the smallest gap value and only climbs once a step's 8pt legibility floor is behind it, because `BoardGrid.resolve` degrades spacing and margin under pressure but can never claw back padding; inner corner radius is capped at 15 so no step turns a small widget's tiles into pills; outer corner radius is a constant 22, matching the iOS widget's own container corner so a board's outer tiles fuse into the system mask.
+Five bundled steps — `Flush`, `Hairline`, `Standard`, `Relaxed`, `Open` (`DensityTemplate.all` in `Shared/BoardPresetStore.swift`) — on one "breathing room" axis. Each step moves margin, spacing, padding, and corner radius together, so applying one gives a complete, coherent look rather than a set of independent sliders. Margin never falls below spacing (an even ladder: margin +4, spacing +3 per step); padding is kept the smallest gap value and only climbs once a step's 8pt legibility floor is behind it, because `BoardGrid.resolve` degrades spacing and margin under pressure long before it ever needs to reach into padding; inner corner radius is capped at 15 so no step turns a small widget's tiles into pills. Outer corner radius only fuses to the widget's own ~22pt container corner at Flush and Hairline, where margin (0pt, 4pt) sits close enough to the true edge for that curve to reach the tile; at Standard, Relaxed and Open, margin (8/12/16pt) already clears that zone, so outer radius there just matches inner instead of rounding only the 4 outer tiles for no reason.
 
 ## Rendering
 
@@ -90,17 +90,25 @@ gh release create v2.0.0 --generate-notes
 ## Files
 
 ```
-Shared/Theme.swift            the 10 default themes, as a plain enum
-Shared/BoardPresetStore.swift  density templates, default presets, persistence
-Shared/BoardGrid.swift        columns, rows, tile mode, touch-target clamp, type scale, sample names
-Shared/BoardView.swift        tiles, empty state
-Shared/WidgetBackground.swift background resolver, wallpaper-slice view
-Shared/WidgetGeometry.swift   per-device widget grid; maps a slot to a wallpaper rectangle
-Shared/WallpaperStore.swift   normalises the screenshot and pre-renders one slice per slot
-App/App.swift                 the whole app
-App/Assets.xcassets           app icon and accent color
-Widget/LauncherIntent.swift   parameters, AppEnum conformances
-Widget/Widget.swift           provider, entry view, widget
+Shared/AppGroup.swift          resolves the entitled App Group id; UserDefaults suite for both targets
+Shared/Theme.swift             the 10 default themes, as a plain enum
+Shared/BoardLayoutValues.swift the layout fields a preset or density template carries
+Shared/BoardPreset.swift       one saved board: layout, theme id, background style; legacy decode
+Shared/BoardPresetStore.swift  density templates, default presets, persistence, restore-defaults
+Shared/BoardThemeStore.swift   default themes, persistence, restore-defaults
+Shared/BoardGrid.swift         columns, rows, tile mode, touch-target clamp, type scale, sample names
+Shared/BoardView.swift         tiles, empty state
+Shared/Layout.swift            BackgroundStyle and WidgetPosition enums
+Shared/WidgetBackground.swift  background resolver, wallpaper-slice view
+Shared/WidgetGeometry.swift    per-device widget grid; maps a slot to a wallpaper rectangle
+Shared/WallpaperStore.swift    normalises the screenshot and pre-renders one slice per slot
+App/App.swift                  app entry point; loads the last-edited preset
+App/PresetEditor.swift         layout/theme/background editor and live preview
+App/PresetList.swift           preset picker, reorder, duplicate, restore defaults
+App/ThemeList.swift            theme picker, reorder, duplicate, restore defaults
+App/Assets.xcassets            app icon and accent color
+Widget/LauncherIntent.swift    parameters, AppEnum conformances
+Widget/Widget.swift            provider, entry view, widget
 Tools/verify-layout.py           re-derives the layout arithmetic and checks it
 Tools/verify-widget-geometry.py  re-derives the wallpaper-slice rectangles and checks they stay on screen
 ```

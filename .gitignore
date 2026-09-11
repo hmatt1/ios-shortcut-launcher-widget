@@ -22,3 +22,10 @@ xcuserdata/
 
 # OS X
 .DS_Store
+
+# Stray attachments (e.g. dragged into the working directory by a chat client)
+attachments.zip
+
+# Python bytecode cache (Tools/verify-*.py)
+__pycache__/
+*.pyc

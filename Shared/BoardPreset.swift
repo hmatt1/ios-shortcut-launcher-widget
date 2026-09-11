@@ -47,7 +47,7 @@ public struct BoardPreset: Codable, Sendable, Identifiable, Equatable {
     }
 
     enum CodingKeys: CodingKey {
-        case id, name, columns, marginX, marginY, spacingX, spacingY, paddingX, paddingY, cornerRadius, outerCornerRadius, themeId, theme, customTheme, background
+        case id, name, columns, marginX, marginY, spacingX, spacingY, paddingX, paddingY, cornerRadius, outerCornerRadius, themeId, theme, background
     }
 
     public init(from decoder: Decoder) throws {
@@ -70,12 +70,10 @@ public struct BoardPreset: Codable, Sendable, Identifiable, Equatable {
         if let decodedThemeId = try container.decodeIfPresent(UUID.self, forKey: .themeId) {
             themeId = decodedThemeId
         } else if let oldTheme = try container.decodeIfPresent(Theme.self, forKey: .theme) {
-            // Migrate from old Theme enum
-            let defaultThemes = BoardThemeStore.createDefaultThemes()
-            let matched = defaultThemes.first(where: { $0.name == oldTheme.displayName })
-            themeId = matched?.id ?? defaultThemes.first!.id
+            // Migrate from the old Theme enum straight to its built-in's stable id.
+            themeId = BoardThemeStore.defaultThemeId(for: oldTheme)
         } else {
-            themeId = BoardThemeStore.createDefaultThemes().first!.id
+            themeId = BoardThemeStore.defaultThemeId(for: .ink)
         }
     }
 

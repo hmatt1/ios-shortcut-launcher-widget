@@ -89,7 +89,7 @@ struct BoardGrid: Sendable {
 
         var cell = currentCell()
 
-        // Degradation order: spacing -> margin -> floor at 1pt
+        // Degradation order: spacing -> margin -> padding -> floor at 1pt
         // 1. Reduce spacing toward 0
         if cell.width < 1 && cols > 1 {
             let neededTotal = (1 - cell.width) * CGFloat(cols)
@@ -116,7 +116,29 @@ struct BoardGrid: Sendable {
         }
         cell = currentCell()
 
-        // 3. Floor at 1pt
+        // 3. Reduce padding toward 0. Padding sits inside the cell rather than
+        // between cells, so it never shows up in `currentCell()` above — a
+        // cell can already clear the 1pt floor below while its own padding
+        // still consumes the whole thing, hiding the one thing (the name)
+        // that tells tiles apart. This mainly bites in row mode: its row
+        // count grows with the shortcut count with no column dimension to
+        // share the pressure, so padding — never degraded before, on the
+        // assumption spacing and margin would always absorb it first — could
+        // exceed the whole row. This step only fires once those two are
+        // already exhausted, so every board that resolved fine before still
+        // resolves exactly the same.
+        if cell.width - layout.paddingX * 2 < 1 {
+            let neededTotal = 1 - (cell.width - layout.paddingX * 2)
+            let cut = min(layout.paddingX, neededTotal / 2)
+            layout.paddingX -= cut
+        }
+        if cell.height - layout.paddingY * 2 < 1 {
+            let neededTotal = 1 - (cell.height - layout.paddingY * 2)
+            let cut = min(layout.paddingY, neededTotal / 2)
+            layout.paddingY -= cut
+        }
+
+        // 4. Floor at 1pt
         cell.width = max(1, cell.width)
         cell.height = max(1, cell.height)
 

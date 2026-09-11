@@ -38,14 +38,19 @@ public class BoardThemeStore: ObservableObject {
     }
     
     public static nonisolated func createDefaultThemes() -> [BoardTheme] {
-        return Theme.allCases.enumerated().map { index, theme in
-            let stableId = UUID(uuidString: "11111111-1111-1111-1111-\(String(format: "%012x", index))")!
-            return BoardTheme(
-                id: stableId,
-                name: theme.displayName,
-                spec: theme.spec
-            )
+        return Theme.allCases.map { theme in
+            BoardTheme(id: defaultThemeId(for: theme), name: theme.displayName, spec: theme.spec)
         }
+    }
+
+    /// The stable id a built-in theme's `BoardTheme` carries, derived from its
+    /// position in `Theme.allCases` — the single source of truth for that
+    /// formula, so callers that need a default theme's id (rather than its
+    /// spec, which is available directly from `Theme`) never have to
+    /// string-match a display name against `createDefaultThemes()`.
+    public static nonisolated func defaultThemeId(for theme: Theme) -> UUID {
+        let index = Theme.allCases.firstIndex { $0.rawValue == theme.rawValue }!
+        return UUID(uuidString: "11111111-1111-1111-1111-\(String(format: "%012x", index))")!
     }
     
     public func create(name: String) -> BoardTheme {

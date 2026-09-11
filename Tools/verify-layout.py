@@ -11,8 +11,9 @@ It asserts, across every family, shortcut count, explicit column count, density 
 published iPhone widget canvas and a range of name lengths:
 
   1. no tile is ever smaller than 1x1 pt
-  2. the text style chosen for a board still fits on every device, not just on
-     the smallest canvas the resolver clamps against
+  2. the cell size, and the font chosen for it, never shrink on a published
+     device canvas bigger than the smallest one the resolver clamps against
+     ("tiles only ever grow" — see BoardSize.canvas's doc comment)
   3. resolved spacing and margin equal requested values whenever they fit
   4. degradation fires only when needed, reducing spacing before margin
   5. every accent in every theme clears 4.5:1 against that theme's label
@@ -84,10 +85,8 @@ def cell_size(w, h, cols, rows, mX, mY, sX, sY):
     height = h - mY * 2 - sY * max(0, rows - 1)
     return width / cols, height / rows
 
-def degrade(w, h, cols, rows, mX, mY, sX, sY):
+def degrade(w, h, cols, rows, mX, mY, sX, sY, pX, pY):
     cw, ch = cell_size(w, h, cols, rows, mX, mY, sX, sY)
-    if cw >= 1 and ch >= 1:
-        return mX, mY, sX, sY
 
     # 1. Spacing
     if cw < 1 and cols > 1:
@@ -98,9 +97,9 @@ def degrade(w, h, cols, rows, mX, mY, sX, sY):
         needed = (1 - ch) * rows
         cut = min(sY, needed / (rows - 1))
         sY -= cut
-        
+
     cw, ch = cell_size(w, h, cols, rows, mX, mY, sX, sY)
-    
+
     # 2. Margin
     if cw < 1:
         needed = (1 - cw) * cols
@@ -111,7 +110,24 @@ def degrade(w, h, cols, rows, mX, mY, sX, sY):
         cut = min(mY, needed / 2)
         mY -= cut
 
-    return mX, mY, sX, sY
+    cw, ch = cell_size(w, h, cols, rows, mX, mY, sX, sY)
+
+    # 3. Padding. It sits inside the cell, so it never shows up in
+    # cell_size() above — a cell can already clear the 1pt floor while its
+    # own padding still consumes it entirely, hiding the name. Only fires
+    # once spacing and margin are already exhausted (mainly row mode, where
+    # row count grows with shortcut count and there's no column dimension to
+    # share the pressure).
+    if cw - pX * 2 < 1:
+        needed = 1 - (cw - pX * 2)
+        cut = min(pX, needed / 2)
+        pX -= cut
+    if ch - pY * 2 < 1:
+        needed = 1 - (ch - pY * 2)
+        cut = min(pY, needed / 2)
+        pY -= cut
+
+    return mX, mY, sX, sY, pX, pY
 
 def text_style(cell_w, cell_h, mode, pX, pY, longest_name):
     width = max(1.0, cell_w - pX * 2)
@@ -157,32 +173,53 @@ def main():
                         req_cw, req_ch = cell_size(fw, fh, cols, rows, mX, mY, sX, sY)
                         
                         # Resolved size
-                        rmX, rmY, rsX, rsY = degrade(fw, fh, cols, rows, mX, mY, sX, sY)
+                        rmX, rmY, rsX, rsY, rpX, rpY = degrade(fw, fh, cols, rows, mX, mY, sX, sY, pX, pY)
                         cw, ch = cell_size(fw, fh, cols, rows, rmX, rmY, rsX, rsY)
                         cw = max(1.0, cw)
                         ch = max(1.0, ch)
-                        
+
                         where = f"{size}/{slots} slots/{cols} cols/{mX},{mY},{sX},{sY}"
-                        
+
                         if cw < 0.999 or ch < 0.999:
                             failures.append(f"Cell floored under 1pt at {where}: {cw:.1f}x{ch:.1f}")
-                            
+
+                        content_w = cw - rpX * 2
+                        content_h = ch - rpY * 2
+                        if content_w < 0.999 or content_h < 0.999:
+                            failures.append(f"Padded content area floored under 1pt at {where}: "
+                                             f"{content_w:.1f}x{content_h:.1f} (name would be hidden)")
+
                         if req_cw >= 1 and req_ch >= 1:
                             if abs(rmX - mX) > 0.01 or abs(rsX - sX) > 0.01:
                                 failures.append(f"Degraded when it fit at {where}")
-                        
-                        style, points, used = text_style(cw, ch, mode, pX, pY, name_length)
 
+                        # Padding has its own, independent fit target — the content
+                        # area, not the raw cell — so it's checked against the
+                        # *requested* content area rather than gated on req_cw/ch.
+                        req_content_w = req_cw - pX * 2
+                        req_content_h = req_ch - pY * 2
+                        if req_content_w >= 1 and req_content_h >= 1:
+                            if abs(rpX - pX) > 0.01 or abs(rpY - pY) > 0.01:
+                                failures.append(f"Padding degraded when it fit at {where}")
+
+                        style, points, _ = text_style(cw, ch, mode, rpX, rpY, name_length)
+
+                        # BoardSize.canvas is deliberately the smallest canvas iOS
+                        # gives this family (see its doc comment): "tiles only ever
+                        # grow" on a bigger device of the same family, for the same
+                        # requested layout. Confirm the cell, and the font chosen
+                        # for it, hold or grow with device size, never shrink.
                         for device_w, device_h in DEVICES[size]:
                             checks += 1
                             dw, dh = cell_size(device_w, device_h, cols, rows, rmX, rmY, rsX, rsY)
-                            dw = max(1.0, dw)
-                            dh = max(1.0, dh)
-                            
-                            # if h < points * 1.25 * used + 6 - 0.01:
-                            #     failures.append(f"{style} does not fit {where}: {dh:.1f}pt tall")
-                            # if text_style(dw, dh, mode, pX, pY, name_length)[1] < points:
-                            #     failures.append(f"{style} too large for {where} on {device_w}x{device_h}")
+                            if dw < cw - 0.01 or dh < ch - 0.01:
+                                failures.append(f"Tile shrank on a bigger device at {where}: "
+                                                 f"{cw:.1f}x{ch:.1f} -> {dw:.1f}x{dh:.1f} on {device_w}x{device_h}")
+
+                            device_points = text_style(dw, dh, mode, rpX, rpY, name_length)[1]
+                            if device_points < points - 0.01:
+                                failures.append(f"{style} shrank to a smaller font on a bigger device "
+                                                 f"at {where}: {device_w}x{device_h}")
 
     for theme, (accents, label, bg) in THEMES.items():
         for accent in accents:

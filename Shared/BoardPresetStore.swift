@@ -14,23 +14,29 @@ extension DensityTemplate {
     /// corner radius all move together, so one tap gives a complete, coherent
     /// look rather than a grab-bag of independent sliders.
     ///
-    /// `BoardGrid.resolve` degrades spacing, then margin, but can never claw
-    /// back padding — so padding is kept the smallest gap-like value and only
-    /// climbs (8 -> 12) once the tighter steps' 8pt legibility floor is behind
-    /// it, instead of sitting at a flat 12 that starved every tight board.
+    /// `BoardGrid.resolve` degrades spacing, then margin, and only reaches
+    /// into padding as a last resort — so padding is kept the smallest
+    /// gap-like value and only climbs (8 -> 12) once the tighter steps' 8pt
+    /// legibility floor is behind it, instead of sitting at a flat 12 that
+    /// starved every tight board.
     /// Inner radius is capped at 15 so no step turns a small widget's tiles
-    /// into pills (the old ladder ran to 24); outer radius is a constant 22 —
-    /// the iOS widget's own container corner — so a board's outer tiles fuse
-    /// into the system mask at every step. Margin never falls below spacing,
-    /// on an even ladder (margin +4, spacing +3 per step), so "breathing room"
-    /// grows in one legible direction. Columns are left at 0 (auto) in every
-    /// step; only individual presets pin a column count.
+    /// into pills (the old ladder ran to 24). Outer radius only needs to fuse
+    /// to the widget's own ~22pt container corner at Flush and Hairline,
+    /// where margin (0pt, 4pt) sits close enough to the true edge for that
+    /// curve to actually reach the tile; at Standard, Relaxed and Open,
+    /// margin (8/12/16pt) already clears that zone — nothing drawn there can
+    /// interact with the container's corner at all — so outer radius there
+    /// just matches inner. A flat 22 past that point rounded only the 4 outer
+    /// tiles for no reason. Margin never falls below spacing, on an even
+    /// ladder (margin +4, spacing +3 per step), so "breathing room" grows in
+    /// one legible direction. Columns are left at 0 (auto) in every step;
+    /// only individual presets pin a column count.
     public static let all: [DensityTemplate] = [
         DensityTemplate(id: "flush", name: "Flush", layout: BoardLayoutValues(columns: 0, marginX: 0, marginY: 0, spacingX: 0, spacingY: 0, paddingX: 8, paddingY: 8, cornerRadius: 4, outerCornerRadius: 22)),
         DensityTemplate(id: "hairline", name: "Hairline", layout: BoardLayoutValues(columns: 0, marginX: 4, marginY: 4, spacingX: 3, spacingY: 3, paddingX: 8, paddingY: 8, cornerRadius: 7, outerCornerRadius: 22)),
-        DensityTemplate(id: "standard", name: "Standard", layout: BoardLayoutValues(columns: 0, marginX: 8, marginY: 8, spacingX: 6, spacingY: 6, paddingX: 10, paddingY: 10, cornerRadius: 10, outerCornerRadius: 22)),
-        DensityTemplate(id: "relaxed", name: "Relaxed", layout: BoardLayoutValues(columns: 0, marginX: 12, marginY: 12, spacingX: 9, spacingY: 9, paddingX: 12, paddingY: 12, cornerRadius: 13, outerCornerRadius: 22)),
-        DensityTemplate(id: "open", name: "Open", layout: BoardLayoutValues(columns: 0, marginX: 16, marginY: 16, spacingX: 12, spacingY: 12, paddingX: 12, paddingY: 12, cornerRadius: 15, outerCornerRadius: 22))
+        DensityTemplate(id: "standard", name: "Standard", layout: BoardLayoutValues(columns: 0, marginX: 8, marginY: 8, spacingX: 6, spacingY: 6, paddingX: 10, paddingY: 10, cornerRadius: 10, outerCornerRadius: 10)),
+        DensityTemplate(id: "relaxed", name: "Relaxed", layout: BoardLayoutValues(columns: 0, marginX: 12, marginY: 12, spacingX: 9, spacingY: 9, paddingX: 12, paddingY: 12, cornerRadius: 13, outerCornerRadius: 13)),
+        DensityTemplate(id: "open", name: "Open", layout: BoardLayoutValues(columns: 0, marginX: 16, marginY: 16, spacingX: 12, spacingY: 12, paddingX: 12, paddingY: 12, cornerRadius: 15, outerCornerRadius: 15))
     ]
 }
 
@@ -63,10 +69,6 @@ public class BoardPresetStore: ObservableObject {
         return all.first { $0.id == id } ?? all.first ?? createDefaultPresets().first!
     }
     
-    private func load() {
-        presets = BoardPresetStore.loadRaw()
-    }
-    
     private func save() {
         if let encoded = try? JSONEncoder().encode(presets) {
             defaults?.set(encoded, forKey: key)
@@ -74,37 +76,44 @@ public class BoardPresetStore: ObservableObject {
         }
     }
     
-    /// Ten showcase presets, named by look rather than by theme, but chosen so
-    /// every one of the 10 default themes, all 5 density steps, both the Solid
-    /// and System Default backgrounds, an edge-to-edge board and a single-
-    /// column list all appear at least once — the set doubles as a tour of the
-    /// app. Order is load-bearing: ids are derived from index, so entries must
-    /// only ever be appended.
+    /// Eleven showcase presets, named by look rather than by theme. Nine of
+    /// the 10 default themes appear once; Ember appears twice, since it's
+    /// the only theme licensed for a tight density on a Solid background
+    /// (see its comment in Theme.swift) and gets shown at both of the two
+    /// "tight" steps that license actually covers. Chosen so every density
+    /// step, a pinned column count of 1, 2 and 3 as well as Auto, both the
+    /// Solid and System Default backgrounds, and both outer-corner
+    /// treatments (fused to the widget's own mask, and fully square) each
+    /// appear at least once — the set doubles as a tour of the app. Order is
+    /// load-bearing: ids are derived from index, so entries must only ever
+    /// be appended.
     public static nonisolated func createDefaultPresets() -> [BoardPreset] {
         let steps = Dictionary(uniqueKeysWithValues: DensityTemplate.all.map { ($0.id, $0.layout) })
-        let themeIds = Dictionary(uniqueKeysWithValues: BoardThemeStore.createDefaultThemes().map { ($0.name, $0.id) })
 
         struct Showcase {
             let name: String
-            let theme: String
+            let theme: Theme
             let step: String
             let columns: Int
             let background: BackgroundStyle
             /// Overrides the step's inner corner radius; nil keeps the step's value.
             let cornerOverride: CGFloat?
+            /// Overrides the step's outer corner radius; nil keeps the step's value.
+            let outerOverride: CGFloat?
         }
 
         let showcases: [Showcase] = [
-            Showcase(name: "Default", theme: "Midnight", step: "standard", columns: 0, background: .theme, cornerOverride: nil),
-            Showcase(name: "Slate", theme: "Ink", step: "flush", columns: 0, background: .theme, cornerOverride: 0),
-            Showcase(name: "Grid", theme: "Frost", step: "hairline", columns: 0, background: .liquidGlass, cornerOverride: nil),
-            Showcase(name: "Panel", theme: "Aurora", step: "relaxed", columns: 0, background: .theme, cornerOverride: nil),
-            Showcase(name: "Keypad", theme: "Sunset", step: "standard", columns: 0, background: .theme, cornerOverride: nil),
-            Showcase(name: "Console", theme: "Ember", step: "hairline", columns: 0, background: .theme, cornerOverride: nil),
-            Showcase(name: "Notes", theme: "Paper", step: "open", columns: 1, background: .theme, cornerOverride: 4),
-            Showcase(name: "Directory", theme: "Sandstone", step: "relaxed", columns: 0, background: .liquidGlass, cornerOverride: nil),
-            Showcase(name: "Field", theme: "Meadow", step: "open", columns: 0, background: .liquidGlass, cornerOverride: nil),
-            Showcase(name: "Quiet", theme: "Nocturne", step: "standard", columns: 0, background: .theme, cornerOverride: nil)
+            Showcase(name: "Default", theme: .midnight, step: "standard", columns: 0, background: .theme, cornerOverride: nil, outerOverride: nil),
+            Showcase(name: "Slate", theme: .ink, step: "flush", columns: 0, background: .theme, cornerOverride: 0, outerOverride: nil),
+            Showcase(name: "Grid", theme: .frost, step: "hairline", columns: 2, background: .liquidGlass, cornerOverride: nil, outerOverride: nil),
+            Showcase(name: "Panel", theme: .aurora, step: "relaxed", columns: 0, background: .theme, cornerOverride: nil, outerOverride: nil),
+            Showcase(name: "Keypad", theme: .sunset, step: "standard", columns: 3, background: .theme, cornerOverride: nil, outerOverride: nil),
+            Showcase(name: "Console", theme: .ember, step: "hairline", columns: 0, background: .theme, cornerOverride: nil, outerOverride: nil),
+            Showcase(name: "Notes", theme: .paper, step: "open", columns: 1, background: .theme, cornerOverride: 4, outerOverride: 4),
+            Showcase(name: "Directory", theme: .sandstone, step: "relaxed", columns: 0, background: .theme, cornerOverride: nil, outerOverride: nil),
+            Showcase(name: "Field", theme: .meadow, step: "open", columns: 0, background: .liquidGlass, cornerOverride: nil, outerOverride: nil),
+            Showcase(name: "Quiet", theme: .nocturne, step: "standard", columns: 0, background: .theme, cornerOverride: nil, outerOverride: nil),
+            Showcase(name: "Forge", theme: .ember, step: "flush", columns: 0, background: .theme, cornerOverride: 0, outerOverride: 0)
         ]
 
         return showcases.enumerated().map { index, showcase in
@@ -120,8 +129,8 @@ public class BoardPresetStore: ObservableObject {
                 paddingX: layout.paddingX,
                 paddingY: layout.paddingY,
                 cornerRadius: showcase.cornerOverride ?? layout.cornerRadius,
-                outerCornerRadius: layout.outerCornerRadius,
-                themeId: themeIds[showcase.theme]!,
+                outerCornerRadius: showcase.outerOverride ?? layout.outerCornerRadius,
+                themeId: BoardThemeStore.defaultThemeId(for: showcase.theme),
                 background: showcase.background
             )
         }
@@ -141,7 +150,7 @@ public class BoardPresetStore: ObservableObject {
             paddingY: template.paddingY,
             cornerRadius: template.cornerRadius,
             outerCornerRadius: template.outerCornerRadius,
-            themeId: BoardThemeStore.createDefaultThemes().first(where: { t in t.name == "Midnight" })!.id,
+            themeId: BoardThemeStore.defaultThemeId(for: .midnight),
             background: .theme
         )
         presets.append(newPreset)
