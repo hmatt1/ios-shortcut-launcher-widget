@@ -59,6 +59,18 @@ struct PresetListView: View {
                 }
                 .onDelete(perform: deleteItems)
                 .onMove(perform: store.reorder)
+
+                if store.canRestoreDefaultPresets {
+                    Section {
+                        Button {
+                            store.restoreDefaultPresets()
+                        } label: {
+                            Label("Restore Default Presets", systemImage: "arrow.counterclockwise")
+                        }
+                    } footer: {
+                        Text("Adds the built-in presets back to the list. A preset you've edited is kept as-is and the original is re-added as a new preset, e.g. \"Default (Original)\".")
+                    }
+                }
             }
             .navigationTitle("Presets")
             .navigationBarTitleDisplayMode(.inline)

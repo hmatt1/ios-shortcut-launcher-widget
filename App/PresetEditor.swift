@@ -368,13 +368,14 @@ struct PresetEditorView: View {
                preset.spacingY == template.layout.spacingY &&
                preset.paddingX == template.layout.paddingX &&
                preset.paddingY == template.layout.paddingY &&
-               preset.cornerRadius == template.layout.cornerRadius {
+               preset.cornerRadius == template.layout.cornerRadius &&
+               preset.outerCornerRadius == template.layout.outerCornerRadius {
                 return template.name
             }
         }
         return "Custom"
     }
-    
+
     private func applyTemplate(_ template: DensityTemplate) {
         preset.marginX = template.layout.marginX
         preset.marginY = template.layout.marginY
@@ -383,6 +384,7 @@ struct PresetEditorView: View {
         preset.paddingX = template.layout.paddingX
         preset.paddingY = template.layout.paddingY
         preset.cornerRadius = template.layout.cornerRadius
+        preset.outerCornerRadius = template.layout.outerCornerRadius
     }
     
     private var boardView: some View {

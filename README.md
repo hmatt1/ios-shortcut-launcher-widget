@@ -20,7 +20,7 @@ Tiles are typographic. A tile shows the shortcut's own name, so it can never sho
 
 One text size is chosen for the whole board, from the longest name it has to hold. Short names get a large size; a long one steps the whole board down together rather than shrinking its own tile, because on a board with no icons the name is the only thing telling tiles apart, and mixed sizes take that away.
 
-`Theme = Ink` with `Density = Edge` is the minimum: one near-black field, names in faint chips, edge to edge.
+`Theme = Ink` with `Density = Flush` is the minimum: one near-black field, names in faint chips, edge to edge.
 
 ## Layout Configuration Rework
 
@@ -43,17 +43,21 @@ If an existing widget on a user's home screen was placed with the older version 
 python3 Tools/verify-layout.py
 ```
 
-That walks every family, shortcut count, explicit column count, template, published iPhone widget canvas and a range of name lengths, and asserts that no cell shrinks below 1pt, that the chosen text style still fits on every device rather than only on the smallest, that resolved values match requested values when space permits, and that every accent clears 4.5:1 against its label. Run it after touching `Shared/BoardGrid.swift` or `Shared/BoardPreset.swift`.
+That walks every family, shortcut count, explicit column count, template, published iPhone widget canvas and a range of name lengths, and asserts that no cell shrinks below 1pt, that the chosen text style still fits on every device rather than only on the smallest, that resolved values match requested values when space permits, and that every accent clears 4.5:1 against its label and 1.5:1 against both background stops. Run it after touching `Shared/BoardGrid.swift`, `Shared/BoardPreset.swift`, or `Shared/Theme.swift`.
+
+### Density templates
+
+Five bundled steps — `Flush`, `Hairline`, `Standard`, `Relaxed`, `Open` (`DensityTemplate.all` in `Shared/BoardPresetStore.swift`) — on one "breathing room" axis. Each step moves margin, spacing, padding, and corner radius together, so applying one gives a complete, coherent look rather than a set of independent sliders. Margin never falls below spacing (an even ladder: margin +4, spacing +3 per step); padding is kept the smallest gap value and only climbs once a step's 8pt legibility floor is behind it, because `BoardGrid.resolve` degrades spacing and margin under pressure but can never claw back padding; inner corner radius is capped at 15 so no step turns a small widget's tiles into pills; outer corner radius is a constant 22, matching the iOS widget's own container corner so a board's outer tiles fuse into the system mask.
 
 ## Rendering
 
 Accented mode was designed first. When someone picks a tinted or clear Home Screen the system switches the widget out of `WidgetRenderingMode.fullColor`, tints content white and replaces the container background. The widget then draws no background and no color, and each tile keeps a translucent white chip, because the system preserves the opacity of translucent content and tints it. That chip is what keeps the board readable as a grid once the color is gone. All widget content is one group, so there is nothing for `.widgetAccentable()` to separate.
 
-Tiles keep their rounded corners even at `Edge`, where there is no gap at all: at zero separation the corner notch is the only thing marking where one tap target ends and the next begins, and in accented mode every tile carries the same fill.
+Tiles keep their rounded corners even at `Flush`, where there is no gap at all: at zero separation the corner notch is the only thing marking where one tap target ends and the next begins, and in accented mode every tile carries the same fill.
 
 Full color adds exactly one thing on top: a flat surface per tile and a background. No gradients on tiles, no strokes, no shadows, and no `Material` or `.glassEffect` on a tile anywhere. Liquid Glass belongs to the system.
 
-Every accent in the three color themes clears 4.5:1 against its label color. Contrast is fixed in the palette and checked by `Tools/verify-layout.py`, never computed at runtime.
+Every accent in the eight chromatic themes (`Shared/Theme.swift`; `Ink` and `Paper` are monochrome) clears 4.5:1 against its label color and 1.5:1 against both of its theme's background stops. Contrast is fixed in the palette and checked by `Tools/verify-layout.py`, never computed at runtime.
 
 ## Background
 
@@ -86,7 +90,8 @@ gh release create v2.0.0 --generate-notes
 ## Files
 
 ```
-Shared/Theme.swift            themes and densities, as plain enums
+Shared/Theme.swift            the 10 default themes, as a plain enum
+Shared/BoardPresetStore.swift  density templates, default presets, persistence
 Shared/BoardGrid.swift        columns, rows, tile mode, touch-target clamp, type scale, sample names
 Shared/BoardView.swift        tiles, empty state
 Shared/WidgetBackground.swift background resolver, wallpaper-slice view

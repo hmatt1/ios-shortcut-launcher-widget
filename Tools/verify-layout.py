@@ -16,6 +16,7 @@ published iPhone widget canvas and a range of name lengths:
   3. resolved spacing and margin equal requested values whenever they fit
   4. degradation fires only when needed, reducing spacing before margin
   5. every accent in every theme clears 4.5:1 against that theme's label
+  6. every accent in every theme clears 1.5:1 against both background stops
 """
 
 import math
@@ -32,18 +33,15 @@ DEVICES = {
     "extraLarge": [(291, 457), (321, 500), (329, 535), (338, 550), (344, 570), (360, 589), (364, 594)],
 }
 
-# (marginX, marginY, spacingX, spacingY, paddingX, paddingY)
+# (marginX, marginY, spacingX, spacingY, paddingX, paddingY) — Flush, Hairline,
+# Standard, Relaxed, Open. Corner radius doesn't affect this arithmetic, so it
+# isn't part of the tuple.
 TEMPLATES = [
-    (0.0, 0.0, 0.0, 0.0, 12.0, 12.0),
-    (2.0, 2.0, 2.0, 2.0, 12.0, 12.0),
-    (4.0, 4.0, 4.0, 4.0, 12.0, 12.0),
-    (4.0, 4.0, 8.0, 8.0, 12.0, 12.0),
-    (8.0, 8.0, 8.0, 8.0, 12.0, 12.0),
-    (8.0, 8.0, 12.0, 12.0, 12.0, 12.0),
-    (12.0, 12.0, 12.0, 12.0, 12.0, 12.0),
+    (0.0,  0.0,  0.0, 0.0, 8.0,  8.0),
+    (4.0,  4.0,  3.0, 3.0, 8.0,  8.0),
+    (8.0,  8.0,  6.0, 6.0, 10.0, 10.0),
+    (12.0, 12.0, 9.0, 9.0, 12.0, 12.0),
     (16.0, 16.0, 12.0, 12.0, 12.0, 12.0),
-    (16.0, 16.0, 16.0, 16.0, 12.0, 12.0),
-    (20.0, 20.0, 16.0, 16.0, 12.0, 12.0),
 ]
 
 LADDER = [
@@ -53,12 +51,19 @@ LADDER = [
 
 LINE_LIMIT = {"row": 2, "tile": 3}
 
+# (accents, label, [bg_stop1, bg_stop2]) for all 10 default themes, mirroring
+# Shared/Theme.swift exactly — re-sync both after touching either file.
 THEMES = {
-    "ink": ([], 0xF5F5F7),
-    "paper": ([], 0x111014),
-    "midnight": ([0x3B5BDB, 0x1971C2, 0x5F3DC4, 0x7048B6, 0xC2255C, 0x2C5FA8], 0xFFFFFF),
-    "aurora": ([0x0B7A5B, 0x2B7A3F, 0x557A0B, 0x0E7490, 0x0F766E, 0x4D7C0F], 0xFFFFFF),
-    "sunset": ([0xC92A2A, 0xC2410C, 0xA9346B, 0x862E9C, 0x364FC7, 0x8F5B10], 0xFFFFFF),
+    "ink":       ([], 0xFAFAFA, [0x0A0A0C, 0x17171B]),
+    "paper":     ([], 0x1B1712, [0xFCF9F3, 0xF0E9DB]),
+    "midnight":  ([0x3B5BDB, 0x2560C0, 0x5F3DC4, 0x6741D9, 0x0B6C7E, 0x3A57D2], 0xF5F7FF, [0x0A1128, 0x172049]),
+    "aurora":    ([0x0B7A5B, 0x0A7D5C, 0x0C7A8C, 0x24793A, 0x0F7C68, 0x0B7285], 0xF0FFF9, [0x042922, 0x0A3F4A]),
+    "sunset":    ([0xCE2C2C, 0xC82E60, 0xC2255C, 0xA332BC, 0x9C36B5, 0xC13C0C], 0xFFF3EE, [0x2A0B2E, 0x4E1233]),
+    "nocturne":  ([0x6A44DE, 0x6741D9, 0x6440D3, 0x5F3DC4, 0x533AAF, 0x6244CC], 0xEFE9FF, [0x130A24, 0x241047]),
+    "ember":     ([0xC82B23, 0xC33318, 0xBC400F, 0xAF4B0B, 0x965009, 0xBB3E1D], 0xFFF1E8, [0x1A0E08, 0x331206]),
+    "meadow":    ([0x4FB172, 0x45B268, 0x57AE55, 0x62AC49, 0x4FAE86, 0x4AAB63], 0x14301E, [0xF2FAEC, 0xDCEFCB]),
+    "sandstone": ([0xC58F49, 0xCB9A55, 0xC08640, 0xBE8446, 0xC79355, 0xC28D4C], 0x2E2114, [0xFBF4E9, 0xEEDDC4]),
+    "frost":     ([0x5AA0CE, 0x62A3CD, 0x5E9BCE, 0x7C97D2, 0x5CA4B8, 0x7699D2], 0x182A3B, [0xF0F4F9, 0xD9E3EF]),
 }
 
 def balanced(slots):
@@ -179,12 +184,17 @@ def main():
                             # if text_style(dw, dh, mode, pX, pY, name_length)[1] < points:
                             #     failures.append(f"{style} too large for {where} on {device_w}x{device_h}")
 
-    for theme, (accents, label) in THEMES.items():
+    for theme, (accents, label, bg) in THEMES.items():
         for accent in accents:
             checks += 1
             ratio = contrast(accent, label)
             if ratio < 4.5:
                 failures.append(f"{theme} #{accent:06X} is {ratio:.2f}:1 against its label")
+
+            checks += 1
+            bg_ratio = min(contrast(accent, bg[0]), contrast(accent, bg[1]))
+            if bg_ratio < 1.5:
+                failures.append(f"{theme} #{accent:06X} is {bg_ratio:.2f}:1 against its background")
 
     print(f"{checks} checks")
     for failure in failures[:50]:
