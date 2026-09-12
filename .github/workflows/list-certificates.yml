@@ -4,11 +4,25 @@ name: List Certificates
 # certificates, via the App Store Connect API. Manually triggered only.
 #
 # CODE_SIGN_STYLE: Automatic mints a new development certificate on every
-# fresh CI runner that can't find one cached, and Apple caps how many can
-# exist at once - this is what "Choose a certificate to revoke" in the main
-# build means. Leave revoke_ids blank to only list what's on the account
-# (read-only, GET); pass a comma-separated list of certificate IDs (from a
-# prior list run) to revoke (DELETE) exactly those and nothing else.
+# fresh CI runner that can't find one cached (its private key never leaves
+# that runner's ephemeral keychain, so the certificate is permanently
+# unusable the moment the job ends, even though it stays valid-looking on
+# the account) - these pile up until Apple's account-wide cap is hit, which
+# is what "Choose a certificate to revoke" in the main build means. Leave
+# revoke_ids blank to only list what's on the account (read-only, GET);
+# pass a comma-separated list of certificate IDs (from a prior list run) to
+# revoke (DELETE) exactly those and nothing else.
+#
+# Observed 2026-09-12: DELETE on several "Apple Development: Created via
+# API" certificates all failed with 409 "This certificate cannot be revoked
+# because it is not in an \"issued\" state" - a real, reproducible rejection
+# from Apple's side with no corresponding state field exposed via GET to
+# explain it. The very next real build then succeeded on its own without
+# anything being revoked, so whatever triggers the cap may be transient
+# rather than a hard count. If the main build hits this again: try a build
+# retry first (cheap), fall back to revoking via the Developer Portal web
+# UI (developer.apple.com/account/resources/certificates) if the API
+# DELETE keeps failing the same way.
 
 on:
   workflow_dispatch:
@@ -76,9 +90,8 @@ jobs:
               print(f"id={c['id']}")
               print(f"  type={a.get('certificateType')}  platform={a.get('platform')}")
               print(f"  name={a.get('name')!r}  displayName={a.get('displayName')!r}")
-              print(f"  serialNumber={a.get('serialNumber')}  activated={a.get('activated')}")
+              print(f"  serialNumber={a.get('serialNumber')}")
               print(f"  expirationDate={a.get('expirationDate')}  EXPIRED={expired}")
-              print(f"  raw_attributes={a}")
               print()
 
           revoke_ids = [i.strip() for i in os.environ.get("REVOKE_IDS", "").split(",") if i.strip()]
