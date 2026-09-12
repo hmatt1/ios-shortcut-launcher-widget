@@ -215,7 +215,10 @@ def main():
     p12_b64_path = os.path.join(OUT_DIR, "distribution.p12.b64")
     with open(p12_b64_path, "w") as f:
         f.write(p12_b64)
-    print(f"Wrote {p12_path} and its base64 form to {p12_b64_path}\n")
+    password_path = os.path.join(OUT_DIR, "distribution.p12.password.txt")
+    with open(password_path, "w") as f:
+        f.write(p12_password)
+    print(f"Wrote {p12_path}, its base64 form, and its password to {OUT_DIR}\n")
 
     app_bundle_id = find_bundle_id(APP_BUNDLE_ID)
     widget_bundle_id = find_bundle_id(WIDGET_BUNDLE_ID)
