@@ -47,6 +47,7 @@ import os
 import subprocess
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 
 import jwt  # pip install pyjwt cryptography
@@ -140,7 +141,7 @@ def warn_if_distribution_certificate_exists():
 
 
 def find_bundle_id(identifier):
-    result = api("GET", f"/bundleIds?filter[identifier]={identifier}")
+    result = api("GET", f"/bundleIds?filter[identifier]={urllib.parse.quote(identifier)}")
     matches = result.get("data", [])
     if not matches:
         raise SystemExit(f"No Bundle ID registered for {identifier} - register it in the Developer Portal first.")
@@ -160,7 +161,21 @@ def create_certificate(csr_pem):
     return cert["id"], cert["attributes"]["certificateContent"]
 
 
+def delete_profile_if_exists(name):
+    # Profile names must be unique account-wide, and re-running this script
+    # (e.g. after a transfer failure downstream, once the certificate/profile
+    # creation itself already succeeded) hits that immediately otherwise.
+    # Safe to always delete-and-recreate: nothing else references a profile
+    # by its API id, only project.yml's PROVISIONING_PROFILE_SPECIFIER,
+    # which matches by this same name.
+    result = api("GET", f"/profiles?filter[name]={urllib.parse.quote(name)}")
+    for p in result.get("data", []):
+        print(f"  removing stale profile {p['id']} (same name, likely from an earlier interrupted run)")
+        api("DELETE", f"/profiles/{p['id']}")
+
+
 def create_profile(name, bundle_id, certificate_id):
+    delete_profile_if_exists(name)
     print(f"Creating profile {name!r}...")
     result = api("POST", "/profiles", {
         "data": {
