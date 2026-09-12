@@ -26,10 +26,6 @@ jobs:
       - name: Generate Xcode Project
         run: xcodegen generate
 
-      - name: DEBUG - show actual generated build settings
-        run: |
-          xcodebuild -showBuildSettings -project LauncherBoard.xcodeproj -scheme LauncherBoard -configuration Release 2>&1 | grep -iE "CODE_SIGN|PROVISIONING_PROFILE|CONFIGURATION ="
-
       - name: Import signing certificate and profiles
         env:
           IOS_DIST_CERT_P12_BASE64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
@@ -90,20 +86,6 @@ jobs:
 
           install_profile "$IOS_PROFILE_APP_BASE64"
           install_profile "$IOS_PROFILE_WIDGET_BASE64"
-
-          # TEMPORARY diagnostic - remove once "No profiles ... found" is
-          # root-caused. Confirms what's actually installed/available
-          # rather than guessing further from the error text alone.
-          echo "DEBUG: codesigning identities in keychain:"
-          security find-identity -v -p codesigning "$KEYCHAIN_PATH" || true
-          echo "DEBUG: installed profiles:"
-          for f in "$PROFILES_DIR"/*.mobileprovision; do
-            echo "  -- $f --"
-            decoded="$(security cms -D -i "$f")"
-            /usr/libexec/PlistBuddy -c "Print :Name" /dev/stdin <<< "$decoded"
-            /usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" /dev/stdin <<< "$decoded"
-            /usr/libexec/PlistBuddy -c "Print :ExpirationDate" /dev/stdin <<< "$decoded"
-          done
 
       - name: Build and Upload to TestFlight
         env:
