@@ -62,14 +62,6 @@ jobs:
           # option it doesn't recognize. openssl's `base64 -d` is identical
           # on both, so this can't silently break on whichever OS runs it.
           echo "$IOS_DIST_CERT_P12_BASE64" | openssl base64 -d -A > "$CERT_PATH"
-          # TEMPORARY diagnostic - remove once the MAC-verification failure
-          # is root-caused. Local encode/decode round-trips clean, so this
-          # checks whether the secret's stored value itself is what's wrong.
-          echo "DEBUG: secret length = ${#IOS_DIST_CERT_P12_BASE64}"
-          echo "DEBUG: decoded file size = $(wc -c < "$CERT_PATH")"
-          echo "DEBUG: decoded file sha256 = $(shasum -a 256 "$CERT_PATH")"
-          echo "DEBUG: decoded file head (hex) = $(head -c 32 "$CERT_PATH" | xxd -p)"
-          echo "DEBUG: password length = ${#IOS_DIST_CERT_PASSWORD}"
           security import "$CERT_PATH" -k "$KEYCHAIN_PATH" -P "$IOS_DIST_CERT_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 
@@ -111,9 +103,16 @@ jobs:
           # 2. Archive the app - manual signing (see project.yml's Release
           # config and the "Import signing certificate" step above), so no
           # provisioning-update flags or API auth needed here anymore.
+          # -configuration Release, explicitly: without it, this was
+          # archiving Debug (still CODE_SIGN_STYLE: Automatic, still asking
+          # for a Development profile) rather than Release (Manual signing,
+          # the fixed Distribution certificate/profiles) - relying on the
+          # scheme's own default archive configuration silently picked the
+          # wrong one.
           xcodebuild clean archive \
             -project LauncherBoard.xcodeproj \
             -scheme LauncherBoard \
+            -configuration Release \
             -destination "generic/platform=iOS" \
             -archivePath LauncherBoard.xcarchive \
             MARKETING_VERSION="$VERSION" \
