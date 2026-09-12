@@ -98,3 +98,25 @@ targets:
       - sdk: WidgetKit.framework
       - sdk: SwiftUI.framework
       - sdk: AppIntents.framework
+
+# Explicit, not XcodeGen's auto-generated scheme: CI kept archiving with
+# Debug (still CODE_SIGN_STYLE: Automatic, asking for a Development
+# profile) no matter what -configuration Release was passed on the
+# xcodebuild command line, because a scheme's own per-action configuration
+# wins over that flag. Spelling out archive/profile: Release and
+# run/test/analyze: Debug removes the ambiguity outright.
+schemes:
+  LauncherBoard:
+    build:
+      targets:
+        LauncherBoard: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
