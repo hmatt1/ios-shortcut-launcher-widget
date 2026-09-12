@@ -22,7 +22,7 @@ struct PresetEditorWrapper: View {
             showingPresets = true
         }
         .id(presetId.uuidString) // Force recreate when switching presets
-        .sheet(isPresented: $showingPresets) {
+        .sidePanel(edge: .leading, isPresented: $showingPresets) {
             PresetListView(selectedId: $lastEditedId, isPresented: $showingPresets)
         }
     }

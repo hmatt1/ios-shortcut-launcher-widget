@@ -106,6 +106,7 @@ App/App.swift                  app entry point; loads the last-edited preset
 App/PresetEditor.swift         layout/theme/background editor and live preview
 App/PresetList.swift           preset picker, reorder, duplicate, restore defaults
 App/ThemeList.swift            theme picker, reorder, duplicate, restore defaults
+App/SidePanel.swift            slide-in-from-the-edge presentation used by both list views
 App/Assets.xcassets            app icon and accent color
 Widget/LauncherIntent.swift    parameters, AppEnum conformances
 Widget/Widget.swift            provider, entry view, widget

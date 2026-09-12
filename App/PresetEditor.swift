@@ -76,6 +76,10 @@ struct PresetEditorView: View {
     @ObservedObject private var wallpaperStore = WallpaperStore.shared
     @ObservedObject private var themeStore = BoardThemeStore.shared
     @State private var showingThemeList = false
+    /// Guards the edge-swipe gesture below so one continuous drag opens at
+    /// most one menu, even if it wanders past the 50pt trigger distance
+    /// more than once (e.g. a shaky drag that crosses back over itself).
+    @State private var edgeSwipeConsumed = false
     
     var onShowPresets: () -> Void
     
@@ -339,7 +343,8 @@ struct PresetEditorView: View {
             )
             .ignoresSafeArea()
         }
-        .sheet(isPresented: $showingThemeList) {
+        .simultaneousGesture(edgeSwipeGesture)
+        .sidePanel(edge: .trailing, isPresented: $showingThemeList) {
             ThemeListView(selectedId: Binding(
                 get: { preset.themeId.uuidString },
                 set: { if let uuid = UUID(uuidString: $0) { preset.themeId = uuid } }
@@ -351,6 +356,35 @@ struct PresetEditorView: View {
         }
     }
     
+    /// A swipe starting within 32pt of the left or right screen edge opens
+    /// the menu that lives on that side — Presets on the left, matching its
+    /// bottom-leading button, Themes on the right, matching its
+    /// bottom-trailing one — mirroring how both now slide in from there
+    /// instead of up from the bottom. `.simultaneousGesture` (not
+    /// `.gesture`) so it never steals a Form row's own tap or the board's
+    /// keyboard-dismiss tap; the tight edge band means it essentially never
+    /// sees a scroll drag either, since those start well inside the screen.
+    private var edgeSwipeGesture: some Gesture {
+        DragGesture(minimumDistance: 10)
+            .onChanged { value in
+                guard !edgeSwipeConsumed, !showingThemeList else { return }
+                let edgeBand: CGFloat = 32
+                let horizontal = value.translation.width
+                let vertical = value.translation.height
+                guard abs(horizontal) > abs(vertical) * 1.5 else { return }
+
+                let screenWidth = UIScreen.main.bounds.width
+                if value.startLocation.x < edgeBand, horizontal > 50 {
+                    edgeSwipeConsumed = true
+                    onShowPresets()
+                } else if value.startLocation.x > screenWidth - edgeBand, horizontal < -50 {
+                    edgeSwipeConsumed = true
+                    showingThemeList = true
+                }
+            }
+            .onEnded { _ in edgeSwipeConsumed = false }
+    }
+
     private func updateActiveTheme(_ mutator: @escaping (inout ThemeSpec, Color) -> Void) -> (Color) -> Void {
         return { color in
             guard var theme = themeStore.themes.first(where: { $0.id == preset.themeId }) else { return }
