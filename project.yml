@@ -22,8 +22,18 @@ targets:
       CURRENT_PROJECT_VERSION: "21"
       CODE_SIGN_ENTITLEMENTS: App/LauncherBoard.entitlements
     configs:
+      # Manual, not Automatic: Automatic signing was minting a fresh
+      # Development certificate on every CI run (its private key can't
+      # survive past that ephemeral runner, so it's dead the moment the job
+      # ends) until Apple's per-account cap got hit. This points at one
+      # fixed certificate + profile instead, created once by
+      # Tools/setup-signing.py and never regenerated. Debug (Xcode's
+      # default local-development config, left off this list) stays
+      # Automatic, for anyone building to their own device from Xcode.
       Release:
         CODE_SIGN_IDENTITY: "Apple Distribution"
+        CODE_SIGN_STYLE: Manual
+        PROVISIONING_PROFILE_SPECIFIER: "Shortcut Launcher Widget App Store"
     info:
       path: App/Info.plist
       properties:
@@ -74,6 +84,8 @@ targets:
     configs:
       Release:
         CODE_SIGN_IDENTITY: "Apple Distribution"
+        CODE_SIGN_STYLE: Manual
+        PROVISIONING_PROFILE_SPECIFIER: "Shortcut Launcher Widget Extension App Store"
     info:
       path: Widget/Info.plist
       properties:

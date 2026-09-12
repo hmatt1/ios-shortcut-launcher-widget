@@ -29,3 +29,8 @@ attachments.zip
 # Python bytecode cache (Tools/verify-*.py)
 __pycache__/
 *.pyc
+
+# Tools/setup-signing.py output: a private key, a certificate, and two
+# provisioning profiles. Never committed - copied into GitHub secrets by
+# hand, then this directory is meant to be deleted locally.
+.signing/
