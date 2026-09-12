@@ -87,6 +87,19 @@ jobs:
           install_profile "$IOS_PROFILE_APP_BASE64"
           install_profile "$IOS_PROFILE_WIDGET_BASE64"
 
+          # TEMPORARY diagnostic - remove once "No profiles ... found" is
+          # root-caused. Confirms what's actually installed/available
+          # rather than guessing further from the error text alone.
+          echo "DEBUG: codesigning identities in keychain:"
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH" || true
+          echo "DEBUG: installed profiles:"
+          for f in "$PROFILES_DIR"/*.mobileprovision; do
+            echo "  -- $f --"
+            security cms -D -i "$f" | /usr/libexec/PlistBuddy -c "Print :Name" /dev/stdin
+            security cms -D -i "$f" | /usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" /dev/stdin
+            security cms -D -i "$f" | /usr/libexec/PlistBuddy -c "Print :ExpirationDate" /dev/stdin
+          done
+
       - name: Build and Upload to TestFlight
         env:
           APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
