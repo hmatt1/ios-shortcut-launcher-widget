@@ -34,6 +34,16 @@ targets:
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
           UISceneConfigurations: {}
+        # Required once TARGETED_DEVICE_FAMILY includes iPad (2) - App Store
+        # Connect rejects an upload with no orientations declared, since an
+        # iPad app must support multitasking. Omitted for the Widget
+        # extension target below: it has no window of its own, so the
+        # requirement doesn't apply there.
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
     dependencies:
       - target: LauncherBoardWidget
         embed: true
