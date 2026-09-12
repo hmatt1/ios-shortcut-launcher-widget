@@ -125,6 +125,7 @@ While building this widget, we encountered and resolved several strict Apple req
 3. **Globally Unique Bundle Identifiers:** Bundle IDs must be globally unique to bypass Apple's free-tier signing restrictions (e.g., `com.hmatt1.launcherboard` and `com.hmatt1.launcherboard.Widget`).
 4. **Xcode 27 Cloud Compilation:** iOS 27 features like `RunSystemShortcutIntent` require the Xcode 27 SDK. Our GitHub Action uses `runs-on: xcode-27` to ensure the cloud compiler recognizes these new APIs.
 5. **Widget Intent Constraints:** The iOS 27 `RunSystemShortcutIntent` is only valid when explicitly passed into a `Button(intent:)` initializer within the widget's view.
+6. **Extra Large Is iPad-Only:** `WidgetFamily.systemExtraLarge` is never offered on the iPhone Home Screen, regardless of what a widget's `supportedFamilies` declares — it shows as an unselectable size in the size picker rather than working or disappearing outright. Declaring it does nothing on a `TARGETED_DEVICE_FAMILY: "1"` (iPhone-only) build; both targets now build universal (`"1,2"`) so Extra Large is actually selectable when the app runs on an iPad.
 
 ## License
 
