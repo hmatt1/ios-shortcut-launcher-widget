@@ -112,6 +112,10 @@ Widget/LauncherIntent.swift    parameters, AppEnum conformances
 Widget/Widget.swift            provider, entry view, widget
 Tools/verify-layout.py           re-derives the layout arithmetic and checks it
 Tools/verify-widget-geometry.py  re-derives the wallpaper-slice rectangles and checks they stay on screen
+Tools/app-store-connect.py       pushes listing copy and the age rating via the App Store Connect API
+AppStore/listing.md              the listing copy itself, and Notes for Review, in prose for a human to check
+AppStore/screenshots.md          shot list for App Store screenshots
+docs/                            GitHub Pages: privacy policy and support page
 ```
 
 `Shared/` never imports AppIntents. `BoardView` takes a tile builder, so the widget wraps each tile in `Button(intent:)` and the app renders the same `SlotFace` inert.
