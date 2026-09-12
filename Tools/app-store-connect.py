@@ -52,6 +52,7 @@ LOCALE = "en-US"
 # ---------------------------------------------------------------------------
 NAME = "Shortcut Launcher Widget"
 SUBTITLE = "Run your Shortcuts, tap once"
+PRIVACY_POLICY_URL = "https://hmatt1.github.io/ios-shortcut-launcher-widget/"
 PROMOTIONAL_TEXT = (
     "New: the Extra Large widget fills a whole Home Screen page. Ten "
     "themes, five densities, your own columns — all running the "
@@ -187,17 +188,17 @@ def find_editable_version(app_id):
 def set_name_and_subtitle(app_info_id):
     result = api("GET", f"/appInfos/{app_info_id}/appInfoLocalizations")
     existing = next((l for l in result.get("data", []) if l["attributes"].get("locale") == LOCALE), None)
-    attrs = {"name": NAME, "subtitle": SUBTITLE}
+    attrs = {"name": NAME, "subtitle": SUBTITLE, "privacyPolicyUrl": PRIVACY_POLICY_URL}
     if existing:
         write("PATCH", f"/appInfoLocalizations/{existing['id']}",
               {"data": {"type": "appInfoLocalizations", "id": existing["id"], "attributes": attrs}},
-              "update name/subtitle")
+              "update name/subtitle/privacy policy URL")
     else:
         write("POST", "/appInfoLocalizations",
               {"data": {"type": "appInfoLocalizations",
                         "attributes": {**attrs, "locale": LOCALE},
                         "relationships": {"appInfo": {"data": {"type": "appInfos", "id": app_info_id}}}}},
-              "create name/subtitle")
+              "create name/subtitle/privacy policy URL")
 
 
 def set_version_metadata(version_id):
