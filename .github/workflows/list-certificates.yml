@@ -1,25 +1,34 @@
 name: List Certificates
 
-# Read-only diagnostic: lists every code-signing certificate on the Apple
-# Developer account via the App Store Connect API. Manually triggered only
-# - this exists to see exactly what's accumulated (CODE_SIGN_STYLE:
-# Automatic mints a new development certificate on every fresh CI runner
-# that can't find one cached, and Apple caps how many can exist at once),
-# not to run automatically on every push.
+# Diagnostic + cleanup tool for the Apple Developer account's code-signing
+# certificates, via the App Store Connect API. Manually triggered only.
+#
+# CODE_SIGN_STYLE: Automatic mints a new development certificate on every
+# fresh CI runner that can't find one cached, and Apple caps how many can
+# exist at once - this is what "Choose a certificate to revoke" in the main
+# build means. Leave revoke_ids blank to only list what's on the account
+# (read-only, GET); pass a comma-separated list of certificate IDs (from a
+# prior list run) to revoke (DELETE) exactly those and nothing else.
 
 on:
   workflow_dispatch:
+    inputs:
+      revoke_ids:
+        description: 'Comma-separated certificate IDs to revoke. Leave blank to only list.'
+        required: false
+        default: ''
 
 jobs:
   list:
-    name: List certificates
+    name: List / revoke certificates
     runs-on: xcode-27
     steps:
-      - name: List certificates via App Store Connect API
+      - name: List and optionally revoke certificates via App Store Connect API
         env:
           APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
           APPSTORE_KEY_ID: ${{ secrets.ADMIN_APPSTORE_KEY_ID }}
           APPSTORE_P8_KEY: ${{ secrets.ADMIN_APPSTORE_P8_KEY }}
+          REVOKE_IDS: ${{ inputs.revoke_ids }}
         run: |
           mkdir -p ~/.appstoreconnect/private_keys/
           echo "$APPSTORE_P8_KEY" | tr -d '\r' > ~/.appstoreconnect/private_keys/AuthKey_${APPSTORE_KEY_ID}.p8
@@ -29,6 +38,7 @@ jobs:
           import json
           import os
           import time
+          import urllib.error
           import urllib.request
           import jwt
 
@@ -42,14 +52,22 @@ jobs:
           payload = {"iss": issuer_id, "iat": now, "exp": now + 19 * 60, "aud": "appstoreconnect-v1"}
           token = jwt.encode(payload, private_key, algorithm="ES256", headers={"kid": key_id, "typ": "JWT"})
 
-          req = urllib.request.Request(
-              "https://api.appstoreconnect.apple.com/v1/certificates?limit=200",
-              headers={"Authorization": f"Bearer {token}"},
-          )
-          with urllib.request.urlopen(req) as resp:
-              data = json.loads(resp.read())
+          def api(method, path):
+              req = urllib.request.Request(
+                  f"https://api.appstoreconnect.apple.com/v1{path}",
+                  headers={"Authorization": f"Bearer {token}"},
+                  method=method,
+              )
+              try:
+                  with urllib.request.urlopen(req) as resp:
+                      raw = resp.read()
+                      return json.loads(raw) if raw else {}
+              except urllib.error.HTTPError as e:
+                  print(f"  ERROR {method} {path} -> {e.code}: {e.read().decode(errors='replace')}")
+                  return None
 
-          certs = data.get("data", [])
+          data = api("GET", "/certificates?limit=200")
+          certs = data.get("data", []) if data else []
           print(f"{len(certs)} certificate(s) on this account:\n")
           now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
           for c in certs:
@@ -61,4 +79,14 @@ jobs:
               print(f"  serialNumber={a.get('serialNumber')}")
               print(f"  expirationDate={a.get('expirationDate')}  EXPIRED={expired}")
               print()
+
+          revoke_ids = [i.strip() for i in os.environ.get("REVOKE_IDS", "").split(",") if i.strip()]
+          if revoke_ids:
+              print(f"--- Revoking {len(revoke_ids)} certificate(s) ---\n")
+              for cid in revoke_ids:
+                  print(f"DELETE /certificates/{cid}")
+                  result = api("DELETE", f"/certificates/{cid}")
+                  print("  revoked" if result is not None else "  FAILED")
+          else:
+              print("(no revoke_ids given - listed only)")
           PYEOF
