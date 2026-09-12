@@ -34,6 +34,12 @@ targets:
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
           UISceneConfigurations: {}
+        # This app has no network access at all, so it uses no encryption
+        # beyond what the OS itself provides. Without this key, App Store
+        # Connect asks the export-compliance question by hand on every
+        # single build and holds each one in "Missing Compliance" until
+        # answered; with it set to false, that question resolves itself.
+        ITSAppUsesNonExemptEncryption: false
         # Required once TARGETED_DEVICE_FAMILY includes iPad (2) - App Store
         # Connect rejects an upload with no orientations declared, since an
         # iPad app must support multitasking. Omitted for the Widget
