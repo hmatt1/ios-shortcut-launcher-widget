@@ -95,9 +95,10 @@ jobs:
           echo "DEBUG: installed profiles:"
           for f in "$PROFILES_DIR"/*.mobileprovision; do
             echo "  -- $f --"
-            security cms -D -i "$f" | /usr/libexec/PlistBuddy -c "Print :Name" /dev/stdin
-            security cms -D -i "$f" | /usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" /dev/stdin
-            security cms -D -i "$f" | /usr/libexec/PlistBuddy -c "Print :ExpirationDate" /dev/stdin
+            decoded="$(security cms -D -i "$f")"
+            /usr/libexec/PlistBuddy -c "Print :Name" /dev/stdin <<< "$decoded"
+            /usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" /dev/stdin <<< "$decoded"
+            /usr/libexec/PlistBuddy -c "Print :ExpirationDate" /dev/stdin <<< "$decoded"
           done
 
       - name: Build and Upload to TestFlight
