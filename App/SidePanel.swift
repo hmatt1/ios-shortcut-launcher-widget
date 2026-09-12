@@ -24,7 +24,13 @@ struct SidePanel<PanelContent: View>: ViewModifier {
     /// fully open, `width` is fully (and invisibly) closed.
     @State private var dragBack: CGFloat = 0
 
-    private var width: CGFloat { min(340, UIScreen.main.bounds.width - 56) }
+    /// Full screen width: the panel now takes over the whole screen rather
+    /// than leaving a sliver of the board visible (and the scrim tappable)
+    /// on the other side. Everything else — the drag-to-dismiss gesture, the
+    /// open/close animation, the 30%-of-width commit threshold — already
+    /// worked in terms of `width` rather than a hardcoded number, so taking
+    /// over the full screen needed no other change.
+    private var width: CGFloat { UIScreen.main.bounds.width }
     private let spring = Animation.interactiveSpring(response: 0.32, dampingFraction: 0.86)
 
     func body(content: Content) -> some View {

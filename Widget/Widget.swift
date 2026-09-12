@@ -67,7 +67,10 @@ struct LauncherWidgetView: View {
             ? slots.map { String(localized: $0.displayRepresentation.title) }
             : sample
         
-        let presetId = entry.configuration.preset?.id ?? BoardPresetStore.loadRaw().first!.id
+        // loadPreset(id:) falls back gracefully for any id it can't find
+        // (see Shared/BoardPresetStore.swift), so an unconfigured widget's
+        // placeholder UUID is exactly as safe as a real preset id here.
+        let presetId = entry.configuration.preset?.id ?? UUID()
         let preset = BoardPresetStore.loadPreset(id: presetId)
         let layout = preset.layoutValues
         

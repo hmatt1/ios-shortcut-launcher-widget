@@ -86,7 +86,10 @@ struct PresetEditorView: View {
     init(presetId: UUID, onShowPresets: @escaping () -> Void = {}) {
         self.presetId = presetId
         self.onShowPresets = onShowPresets
-        let p = BoardPresetStore.shared.presets.first(where: { $0.id == presetId }) ?? BoardPresetStore.loadRaw().first!
+        // loadPreset(id:) is the safe version of this lookup (see
+        // Shared/BoardPresetStore.swift) - it never force-unwraps, even if
+        // the store were somehow empty.
+        let p = BoardPresetStore.shared.presets.first(where: { $0.id == presetId }) ?? BoardPresetStore.loadPreset(id: presetId)
         _preset = State(initialValue: p)
     }
     

@@ -27,7 +27,17 @@ public class BoardThemeStore: ObservableObject {
     
     public static nonisolated func loadTheme(id: UUID) -> BoardTheme {
         let all = loadRaw()
-        return all.first { $0.id == id } ?? all.first ?? createDefaultThemes().first!
+        if let match = all.first(where: { $0.id == id }) { return match }
+        if let first = all.first { return first }
+        // loadRaw() already falls back to createDefaultThemes() whenever the
+        // store is empty, so this should be unreachable - but a hardcoded
+        // theme here, instead of force-unwrapping that fallback's .first,
+        // means a corrupted App Group container degrades the widget to a
+        // plain dark board instead of crashing the extension outright.
+        return BoardTheme(
+            name: "Ink",
+            spec: ThemeSpec(accents: [], background: [RGB(0x0A0A0C), RGB(0x17171B)], labels: Array(repeating: RGB(0xFAFAFA), count: 12))
+        )
     }
     
     private func save() {

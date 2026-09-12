@@ -17,7 +17,10 @@ struct PresetEditorWrapper: View {
     @State private var showingPresets = false
     
     var body: some View {
-        let presetId = UUID(uuidString: lastEditedId) ?? BoardPresetStore.loadRaw().first!.id
+        // Falls back to a random UUID rather than force-unwrapping the first
+        // loaded preset - PresetEditorView's own init resolves any id it
+        // can't find the same safe way loadPreset(id:) does.
+        let presetId = UUID(uuidString: lastEditedId) ?? UUID()
         PresetEditorView(presetId: presetId) {
             showingPresets = true
         }

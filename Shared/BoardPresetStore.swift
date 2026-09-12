@@ -66,7 +66,22 @@ public class BoardPresetStore: ObservableObject {
     
     public static nonisolated func loadPreset(id: UUID) -> BoardPreset {
         let all = loadRaw()
-        return all.first { $0.id == id } ?? all.first ?? createDefaultPresets().first!
+        if let match = all.first(where: { $0.id == id }) { return match }
+        if let first = all.first { return first }
+        // loadRaw() already falls back to createDefaultPresets() whenever the
+        // store is empty, so this should be unreachable - but a hardcoded
+        // preset here, instead of force-unwrapping that fallback's .first,
+        // means a corrupted App Group container degrades the widget to a
+        // plain board instead of crashing the extension outright.
+        return BoardPreset(
+            name: "Default",
+            columns: 0,
+            marginX: 8, marginY: 8, spacingX: 6, spacingY: 6,
+            paddingX: 10, paddingY: 10,
+            cornerRadius: 10,
+            themeId: BoardThemeStore.defaultThemeId(for: .midnight),
+            background: .theme
+        )
     }
     
     private func save() {
