@@ -36,7 +36,14 @@ extension BoardSize {
         switch family {
         case .systemSmall: self = .small
         case .systemMedium: self = .medium
-        case .systemExtraLarge: self = .extraLarge
+        // .systemExtraLarge is the original iPad/Mac-landscape extra-large
+        // family (iOS 15+) and has never been offered on the iPhone Home
+        // Screen. The iOS 27 "4x6, fills a whole Home Screen page" extra
+        // large widget iPhone actually got is a distinct, newer case -
+        // .systemExtraLargePortrait (iOS/iPadOS/macOS 27) - and it's the one
+        // BoardSize.extraLarge's canvas (291x457, already portrait-shaped)
+        // was built for.
+        case .systemExtraLargePortrait: self = .extraLarge
         default: self = .large
         }
     }
@@ -145,7 +152,7 @@ struct LauncherBoardWidget: Widget {
         }
         .configurationDisplayName("Shortcut Launcher")
         .description("Run your shortcuts from the Home Screen.")
-        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .systemExtraLarge])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .systemExtraLargePortrait])
         .contentMarginsDisabled()
     }
 }
