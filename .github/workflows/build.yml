@@ -26,6 +26,10 @@ jobs:
       - name: Generate Xcode Project
         run: xcodegen generate
 
+      - name: DEBUG - show actual generated build settings
+        run: |
+          xcodebuild -showBuildSettings -project LauncherBoard.xcodeproj -scheme LauncherBoard -configuration Release 2>&1 | grep -iE "CODE_SIGN|PROVISIONING_PROFILE|CONFIGURATION ="
+
       - name: Import signing certificate and profiles
         env:
           IOS_DIST_CERT_P12_BASE64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
