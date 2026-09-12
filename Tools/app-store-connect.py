@@ -13,6 +13,8 @@ app".
 
 Requires:
     pip install pyjwt cryptography
+    (on a Homebrew-managed macOS Python: pip install --break-system-packages
+    pyjwt cryptography, or use a venv - PEP 668 blocks the plain form)
 
 Credentials — reuse the same App Store Connect API key already used for
 TestFlight uploads in .github/workflows/build.yml (same key, it already has

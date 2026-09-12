@@ -23,7 +23,7 @@ jobs:
         run: |
           mkdir -p ~/.appstoreconnect/private_keys/
           echo "$APPSTORE_P8_KEY" | tr -d '\r' > ~/.appstoreconnect/private_keys/AuthKey_${APPSTORE_KEY_ID}.p8
-          pip3 install --quiet pyjwt cryptography
+          pip3 install --quiet --break-system-packages pyjwt cryptography
 
           python3 - <<'PYEOF'
           import json
