@@ -76,8 +76,9 @@ jobs:
               print(f"id={c['id']}")
               print(f"  type={a.get('certificateType')}  platform={a.get('platform')}")
               print(f"  name={a.get('name')!r}  displayName={a.get('displayName')!r}")
-              print(f"  serialNumber={a.get('serialNumber')}")
+              print(f"  serialNumber={a.get('serialNumber')}  activated={a.get('activated')}")
               print(f"  expirationDate={a.get('expirationDate')}  EXPIRED={expired}")
+              print(f"  raw_attributes={a}")
               print()
 
           revoke_ids = [i.strip() for i in os.environ.get("REVOKE_IDS", "").split(",") if i.strip()]
