@@ -220,7 +220,16 @@ def main():
 
     import secrets
     p12_password = secrets.token_urlsafe(24)
-    run("openssl", "pkcs12", "-export",
+    # -legacy: OpenSSL 3.x defaults PKCS12 export to PBES2/PBKDF2/AES-256-CBC
+    # with a SHA-256 MAC. macOS's `security import` (SecKeychainItemImport)
+    # only understands the older pbeWithSHA1And40BitRC2-CBC /
+    # pbeWithSHA1And3-KeyTripleDES-CBC scheme with a SHA-1 MAC - without
+    # this flag, the resulting .p12 reads back fine in openssl itself
+    # (so local verification here can look completely correct) while
+    # failing keychain import on the actual CI runner with a "MAC
+    # verification failed (wrong password?)" error that has nothing to do
+    # with the password.
+    run("openssl", "pkcs12", "-export", "-legacy",
         "-inkey", key_path, "-in", pem_path,
         "-out", p12_path, "-passout", f"pass:{p12_password}")
 
