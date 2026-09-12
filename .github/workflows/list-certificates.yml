@@ -1,0 +1,64 @@
+name: List Certificates
+
+# Read-only diagnostic: lists every code-signing certificate on the Apple
+# Developer account via the App Store Connect API. Manually triggered only
+# - this exists to see exactly what's accumulated (CODE_SIGN_STYLE:
+# Automatic mints a new development certificate on every fresh CI runner
+# that can't find one cached, and Apple caps how many can exist at once),
+# not to run automatically on every push.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  list:
+    name: List certificates
+    runs-on: xcode-27
+    steps:
+      - name: List certificates via App Store Connect API
+        env:
+          APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+          APPSTORE_KEY_ID: ${{ secrets.ADMIN_APPSTORE_KEY_ID }}
+          APPSTORE_P8_KEY: ${{ secrets.ADMIN_APPSTORE_P8_KEY }}
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys/
+          echo "$APPSTORE_P8_KEY" | tr -d '\r' > ~/.appstoreconnect/private_keys/AuthKey_${APPSTORE_KEY_ID}.p8
+          pip3 install --quiet pyjwt cryptography
+
+          python3 - <<'PYEOF'
+          import json
+          import os
+          import time
+          import urllib.request
+          import jwt
+
+          key_id = os.environ["APPSTORE_KEY_ID"]
+          issuer_id = os.environ["APPSTORE_ISSUER_ID"]
+          key_path = os.path.expanduser(f"~/.appstoreconnect/private_keys/AuthKey_{key_id}.p8")
+          with open(key_path) as f:
+              private_key = f.read()
+
+          now = int(time.time())
+          payload = {"iss": issuer_id, "iat": now, "exp": now + 19 * 60, "aud": "appstoreconnect-v1"}
+          token = jwt.encode(payload, private_key, algorithm="ES256", headers={"kid": key_id, "typ": "JWT"})
+
+          req = urllib.request.Request(
+              "https://api.appstoreconnect.apple.com/v1/certificates?limit=200",
+              headers={"Authorization": f"Bearer {token}"},
+          )
+          with urllib.request.urlopen(req) as resp:
+              data = json.loads(resp.read())
+
+          certs = data.get("data", [])
+          print(f"{len(certs)} certificate(s) on this account:\n")
+          now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+          for c in certs:
+              a = c["attributes"]
+              expired = (a.get("expirationDate") or "9999") < now_iso
+              print(f"id={c['id']}")
+              print(f"  type={a.get('certificateType')}  platform={a.get('platform')}")
+              print(f"  name={a.get('name')!r}  displayName={a.get('displayName')!r}")
+              print(f"  serialNumber={a.get('serialNumber')}")
+              print(f"  expirationDate={a.get('expirationDate')}  EXPIRED={expired}")
+              print()
+          PYEOF
