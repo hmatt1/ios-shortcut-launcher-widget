@@ -1,4 +1,13 @@
 name: LauncherBoard
+# Explicit config-name -> type mapping. Without this, XcodeGen has no
+# declared way to know "Release" is a release-type configuration (only
+# name-based inference), which may be why every per-target Release config
+# override for archive signing (CODE_SIGN_IDENTITY, CODE_SIGN_STYLE,
+# PROVISIONING_PROFILE_SPECIFIER) has silently never taken effect during
+# `xcodebuild archive` - true since before this session touched any of it.
+configs:
+  Debug: debug
+  Release: release
 options:
   bundleIdPrefix: com.hmatt1
   developmentLanguage: en
