@@ -29,6 +29,7 @@ struct PresetListView: View {
                             }
                         }
                     }
+                    .accessibilityIdentifier("preset-row-\(preset.name)")
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                         Button(role: .destructive) {
                             deletePreset(preset)

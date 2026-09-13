@@ -114,6 +114,7 @@ struct PresetEditorView: View {
                         .background(.ultraThinMaterial, in: Circle())
                         .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
                 }
+                .accessibilityIdentifier("openPresetList")
                 .padding(.leading, 16)
                 .padding(.bottom, 8)
             }
@@ -126,6 +127,7 @@ struct PresetEditorView: View {
                         .background(.ultraThinMaterial, in: Circle())
                         .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
                 }
+                .accessibilityIdentifier("openThemeList")
                 .padding(.trailing, 16)
                 .padding(.bottom, 8)
             }

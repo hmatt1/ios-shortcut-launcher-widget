@@ -41,13 +41,31 @@ talks about itself (see `AppStore/listing.md`), not generic marketing-speak.
    coincidence).
    *Blends right into your wallpaper.*
 
-## If you want this automated instead of shot by hand
+## Automated: `.github/workflows/screenshots.yml`
 
-Fastlane's `snapshot` tool drives the Simulator through a UI-test target and
-captures screenshots at every required size automatically, from a script
-you write once. Setting that up (a UI test target in `project.yml` + a
-`Snapfile` + the driver script) is a real option if you'd rather not take
-these by hand every release — but it needs an actual Mac with a simulator to
-write and verify, which isn't available in this environment, so I didn't
-build it blind. Say the word if you want me to draft it anyway for you to
-verify on your own machine.
+Built, not just drafted — trigger it by hand with
+`gh workflow run screenshots.yml` whenever the UI changes enough to be worth
+reshooting (it doesn't run on every push). It boots an iPhone and an iPad
+Simulator on the `xcode-27` CI runner, drives the app's real editor UI (a
+`WidgetScreenshotsUITests` target, `project.yml`) through shots 1-5 above,
+and attaches the results as a zip on a new `screenshots-run-<N>` release —
+a separate tag namespace from the app's real `v*` version releases.
+
+Deliberately not Fastlane: this repo has no Ruby toolchain today, and a
+plain XCUITest target does the same job without adding one. It drives
+`PresetEditorView`'s live preview rather than a real Home Screen widget
+placement — that preview shares its exact rendering pipeline with the real
+widget (`Shared/BoardGrid.swift`, `Shared/BoardView.swift`), so the shots
+are genuinely representative, no WidgetKit-hosting trickery needed.
+
+Shot 6 (transparent wallpaper background) isn't covered — it needs a
+bundled placeholder wallpaper and a way to get it into `WallpaperStore`
+without fighting the system Photos picker in CI, which was left for a
+follow-up rather than blocking the other five on it. Take that one by hand
+for now, the same way you always could.
+
+Like the code-signing pipeline before it, this couldn't be verified
+end-to-end without a real CI run — expect the first `workflow_dispatch` to
+need at least one small correction (`xcresulttool`'s exact flags, a
+Simulator device-type name, animation timing), not a sign anything is
+fundamentally wrong.

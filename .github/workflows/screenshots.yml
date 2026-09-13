@@ -1,0 +1,109 @@
+name: Generate App Store Screenshots
+
+# Manual only - screenshots don't need regenerating on every commit, only
+# when the UI they capture actually changes. Deliberately separate from
+# build.yml: this drives the Simulator (no signing/keychain needed at all,
+# unlike build.yml's device-signed archive) and publishes to its own
+# `screenshots-run-*` release tag namespace, never the app's real `v*`
+# version releases.
+on:
+  workflow_dispatch:
+
+jobs:
+  screenshots:
+    name: Capture Screenshots
+    runs-on: xcode-27
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: brew install xcodegen
+
+      - name: Generate Xcode Project
+        run: xcodegen generate
+
+      - name: Boot Simulators
+        run: |
+          # Tools/resolve-simulator.py picks the newest iPhone Pro Max-class
+          # and iPad Pro-class simulator device types (plus the newest iOS
+          # runtime) this Xcode actually ships, rather than hardcoding one
+          # specific generation that might not exist on this runner's
+          # simulator list - see that script's docstring.
+          RESOLVED=$(python3 Tools/resolve-simulator.py)
+          echo "$RESOLVED" >> "$GITHUB_ENV"
+          eval "$RESOLVED"
+
+          IPHONE_UDID=$(xcrun simctl create "Screenshots-iPhone" "$IPHONE_TYPE" "$RUNTIME")
+          IPAD_UDID=$(xcrun simctl create "Screenshots-iPad" "$IPAD_TYPE" "$RUNTIME")
+          xcrun simctl boot "$IPHONE_UDID"
+          xcrun simctl boot "$IPAD_UDID"
+
+          echo "IPHONE_UDID=$IPHONE_UDID" >> "$GITHUB_ENV"
+          echo "IPAD_UDID=$IPAD_UDID" >> "$GITHUB_ENV"
+
+      - name: Capture iPhone Screenshots
+        run: |
+          xcodebuild test \
+            -project LauncherBoard.xcodeproj \
+            -scheme LauncherBoard \
+            -destination "platform=iOS Simulator,id=$IPHONE_UDID" \
+            -resultBundlePath iphone.xcresult \
+            -only-testing:WidgetScreenshotsUITests
+
+      - name: Capture iPad Screenshots
+        run: |
+          xcodebuild test \
+            -project LauncherBoard.xcodeproj \
+            -scheme LauncherBoard \
+            -destination "platform=iOS Simulator,id=$IPAD_UDID" \
+            -resultBundlePath ipad.xcresult \
+            -only-testing:WidgetScreenshotsUITests
+
+      - name: Extract Screenshots
+        run: |
+          # xcresulttool's exact CLI surface has changed across Xcode
+          # versions before - if this doesn't match Xcode 27's, the fix is a
+          # quick flag adjustment once the real error/--help text is in
+          # hand, not a redesign. Tools/organize-screenshots.py is written
+          # defensively for the same reason (unconfirmed manifest schema).
+          xcrun xcresulttool export attachments --path iphone.xcresult --output-path iphone-export
+          xcrun xcresulttool export attachments --path ipad.xcresult --output-path ipad-export
+
+          python3 Tools/organize-screenshots.py iphone-export screenshots/iphone
+          python3 Tools/organize-screenshots.py ipad-export screenshots/ipad
+
+      - name: Zip Screenshots
+        run: zip -r screenshots.zip screenshots
+
+      - name: Upload Screenshots Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: screenshots.zip
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: screenshots-run-${{ github.run_number }}
+          name: "Screenshots (run ${{ github.run_number }})"
+          prerelease: true
+          files: screenshots.zip
+
+      - name: Shutdown and Remove Simulators
+        if: always()
+        run: |
+          # runs-on: xcode-27 is this project's own custom runner label, not
+          # a guaranteed-fresh stock image (see build.yml's keychain-restore
+          # comment for the same point) - delete what this run created
+          # rather than leaving throwaway simulators to accumulate across
+          # manual runs.
+          for udid in "$IPHONE_UDID" "$IPAD_UDID"; do
+            if [ -n "$udid" ]; then
+              xcrun simctl shutdown "$udid" || true
+              xcrun simctl delete "$udid" || true
+            fi
+          done

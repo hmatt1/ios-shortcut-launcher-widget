@@ -29,6 +29,7 @@ struct ThemeListView: View {
                             }
                         }
                     }
+                    .accessibilityIdentifier("theme-row-\(theme.name)")
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                         Button(role: .destructive) {
                             deleteTheme(theme)

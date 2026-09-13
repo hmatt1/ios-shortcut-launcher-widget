@@ -73,6 +73,17 @@ targets:
         embed: true
       - sdk: SwiftUI.framework
       - sdk: WidgetKit.framework
+    # Attaches WidgetScreenshotsUITests to this target's own auto-generated
+    # scheme's Test action, via XcodeGen's per-target `scheme.testTargets`
+    # convenience - the only thing it changes is adding a Test action entry,
+    # so it can't touch the Build/Archive actions the signing pipeline
+    # depends on. Deliberately not a top-level `schemes:` block: that would
+    # replace the whole auto-generated scheme by hand, risking exactly the
+    # kind of silent misconfiguration the `configs:` nesting bug earlier
+    # taught this project to be wary of.
+    scheme:
+      testTargets:
+        - WidgetScreenshotsUITests
 
   LauncherBoardWidget:
     type: app-extension
@@ -107,3 +118,28 @@ targets:
       - sdk: WidgetKit.framework
       - sdk: SwiftUI.framework
       - sdk: AppIntents.framework
+
+  # Drives the app in the Simulator (via Tools/organize-screenshots.py +
+  # .github/workflows/screenshots.yml) to capture App Store screenshots of
+  # the in-app live preview - which renders through the exact same
+  # BoardGrid/BoardView/SlotFace pipeline as the real widget (see Shared/).
+  # Simulator-only: never archived, so it needs none of the Manual/Release
+  # signing the app and widget targets carry.
+  WidgetScreenshotsUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "27.0"
+    sources: [WidgetScreenshots]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.hmatt1.shortcutlauncherwidget.ScreenshotsUITests
+        DEVELOPMENT_TEAM: FHMS65N3XS
+        CODE_SIGN_STYLE: Automatic
+        SWIFT_VERSION: "5.0"
+        # No Info.plist checked in for this target (it's just two Swift
+        # files) - XcodeGen only wires up INFOPLIST_FILE when it finds one
+        # among a target's sources, so without this the .xctest bundle
+        # would end up with no Info.plist at all.
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: LauncherBoard
