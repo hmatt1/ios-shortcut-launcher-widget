@@ -32,7 +32,17 @@ final class WidgetProviderTests: XCTestCase {
     /// reintroduce ambiguity between two different WidgetFamily cases
     /// resolving to the same BoardSize for different reasons.
     func testEveryWidgetFamilyMapsToASaneBoardSize() {
-        for family in WidgetFamily.allCases {
+        // WidgetFamily isn't CaseIterable (confirmed via a real CI compile
+        // error: "type 'WidgetFamily' has no member 'allCases'") - Apple
+        // adds new families across OS versions without guaranteeing an
+        // enumerable list, which is exactly why BoardSize(family:) has a
+        // `default:` branch at all. Every case that exists as of this
+        // writing is listed explicitly instead.
+        let everyKnownFamily: [WidgetFamily] = [
+            .systemSmall, .systemMedium, .systemLarge, .systemExtraLarge, .systemExtraLargePortrait,
+            .accessoryCircular, .accessoryRectangular, .accessoryInline,
+        ]
+        for family in everyKnownFamily {
             let size = BoardSize(family: family)
             XCTAssertTrue(BoardSize.allCases.contains(size), "BoardSize(family: \(family)) produced \(size), not a real case")
         }
