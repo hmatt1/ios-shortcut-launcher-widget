@@ -111,10 +111,13 @@ final class BoardGridTests: XCTestCase {
             }
         }
 
-        // A floor on the combinatorial count, so a future edit to
-        // TestMatrix that accidentally shrinks it to near-nothing doesn't
-        // silently pass while covering almost none of the space.
-        XCTAssertGreaterThan(checked, 10_000, "exhaustive matrix shrank unexpectedly - only \(checked) combinations checked")
+        // A floor on the combinatorial count (the real total as of this
+        // writing is 4 sizes x 11 slot counts x 7 column counts x 5 layouts
+        // x 6 name lengths = 9240 - confirmed by a real CI run, not
+        // eyeballed), so a future edit to TestMatrix that accidentally
+        // shrinks it to near-nothing doesn't silently pass while covering
+        // almost none of the space.
+        XCTAssertGreaterThan(checked, 5_000, "exhaustive matrix shrank unexpectedly - only \(checked) combinations checked")
     }
 
     /// Direct regression coverage for BoardGrid.maxSlots itself: a request

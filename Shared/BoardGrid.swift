@@ -73,7 +73,16 @@ struct BoardGrid: Sendable {
         let cols = requestedLayout.columns == 0 ? columnCount(for: slots, size: size) : requestedLayout.columns
         let rows = Int(ceil(Double(slots) / Double(cols)))
         
-        let visibleSlots = min(requestedSlots, cols * rows)
+        // `slots`, not `requestedSlots`: a `count` past `maxSlots` (nothing
+        // in this app currently calls resolve() that way - LauncherIntent.slots
+        // and the editor's slot stepper both pre-cap - but resolve() itself
+        // shouldn't rely on that) previously let `cols * rows` for the
+        // capped grid exceed `maxSlots` again once compared against the
+        // UNcapped requestedSlots (e.g. cols=6/rows=11=66 cells for a
+        // capped 64 slots), reporting more visible slots than maxSlots
+        // permits. Caught by WidgetLogicTests/BoardGridTests.swift's
+        // exhaustive matrix, which deliberately includes an over-cap count.
+        let visibleSlots = min(slots, cols * rows)
         let mode: TileMode = cols == 1 && visibleSlots > 1 ? .row : .tile
 
         var layout = requestedLayout
