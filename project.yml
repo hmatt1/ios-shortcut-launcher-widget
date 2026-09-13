@@ -84,6 +84,7 @@ targets:
     scheme:
       testTargets:
         - WidgetScreenshotsUITests
+        - WidgetLogicTests
 
   LauncherBoardWidget:
     type: app-extension
@@ -143,3 +144,33 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
     dependencies:
       - target: LauncherBoard
+
+  # Fast, host-less unit tests of the widget's actual logic - BoardGrid math,
+  # theme contrast, the widget's timeline provider, and the exact
+  # WidgetFamily -> BoardSize mapping that caused the XL widget crash. Runs
+  # on every push via .github/workflows/build.yml (unlike the two Simulator-
+  # UI-driving targets above, which are slow and either manual or on-demand).
+  # No sources of its own beyond the test files themselves, and deliberately
+  # no host application ("Host Application: None", the standard pattern for
+  # testing an app-extension's code without launching it): it depends on
+  # LauncherBoardWidget rather than re-including Widget/ or Shared/ in its
+  # own sources, and reaches every type in both via one `@testable import
+  # LauncherBoardWidget` - since that extension target's own sources are
+  # [Widget, Shared], its compiled module already contains all of it. Re-
+  # sourcing Widget/ directly here instead would recompile Widget/Widget.swift
+  # - and its `@main`-attributed LauncherBoardWidget: Widget struct - into a
+  # second target, which is the one thing this design avoids entirely.
+  WidgetLogicTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "27.0"
+    sources: [WidgetLogicTests]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.hmatt1.shortcutlauncherwidget.LogicTests
+        DEVELOPMENT_TEAM: FHMS65N3XS
+        CODE_SIGN_STYLE: Automatic
+        SWIFT_VERSION: "5.0"
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: LauncherBoardWidget

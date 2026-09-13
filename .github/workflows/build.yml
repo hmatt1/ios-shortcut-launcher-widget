@@ -26,6 +26,40 @@ jobs:
       - name: Generate Xcode Project
         run: xcodegen generate
 
+      - name: Run Unit Tests
+        run: |
+          # WidgetLogicTests (project.yml) - fast, host-less unit tests of
+          # the widget's actual logic (BoardGrid math, theme contrast, the
+          # exact WidgetFamily -> BoardSize mapping that caused the XL
+          # widget crash, memory-leak/ceiling checks). Runs before the slow
+          # archive/sign/upload steps below so a regression blocks those
+          # instead of wasting a TestFlight upload on a broken build.
+          #
+          # Needs a booted-or-bootable Simulator (it's an iOS target, so it
+          # can't run on the macOS runner directly even though it has no
+          # UI) - any already-registered iPhone works, since unlike
+          # screenshots.yml this doesn't care about a specific pixel size,
+          # so plain `simctl` + grep is enough without needing Python's JSON
+          # parsing or creating a new device.
+          # `tail -1`, not the first match: `simctl list` groups devices by
+          # runtime oldest-first, so the last "iPhone ..." line in the whole
+          # listing belongs to the newest installed runtime - matters
+          # because `-destination` below pins OS=latest, and a device name
+          # that only exists under an OLDER runtime wouldn't resolve there.
+          SIM_NAME=$(xcrun simctl list devices available | grep -oE 'iPhone[^(]+' | tail -1 | sed -E 's/[[:space:]]+$//')
+          if [ -z "$SIM_NAME" ]; then
+            echo "No available iPhone simulator found - here's what's registered:"
+            xcrun simctl list devices available
+            exit 1
+          fi
+          echo "Running WidgetLogicTests on \"$SIM_NAME\""
+
+          xcodebuild test \
+            -project LauncherBoard.xcodeproj \
+            -scheme LauncherBoard \
+            -only-testing:WidgetLogicTests \
+            -destination "platform=iOS Simulator,name=$SIM_NAME,OS=latest"
+
       - name: Import signing certificate and profiles
         env:
           IOS_DIST_CERT_P12_BASE64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
