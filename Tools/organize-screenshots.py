@@ -3,21 +3,22 @@
 exported via `xcrun xcresulttool export attachments`) and organize them
 into a clean, predictably-named folder for zipping.
 
-xcresulttool's `export attachments` subcommand writes a manifest file into
-the output directory alongside the exported attachment files (themselves
-given opaque/hashed names). This script reads that manifest, matches each
-entry back to the name given via `XCTAttachment.name` in the UI test (see
-WidgetScreenshots/Navigation.swift's captureScreenshot(named:)), and copies
-each PNG into <dest>/<prefix-><shot-name>.png.
+xcresulttool's `export attachments` subcommand writes a manifest.json file
+into the output directory alongside the exported attachment files
+(themselves given opaque/hashed names). Confirmed against a real Xcode 27
+run: the manifest is a JSON list with one entry per TEST METHOD, each
+carrying a nested "attachments" list of per-screenshot dicts shaped like:
 
-The exact manifest schema is unconfirmed against a real Xcode 27
-xcresulttool run - there's no Mac/Simulator available where this was
-written. Written defensively on purpose: an unrecognized entry is logged
-and skipped rather than crashing the workflow, since the actual schema is
-exactly the kind of thing expected to need one corrective round once real
-CI output is in hand (same as the earlier code-signing pipeline's
-PKCS12/base64 fixes) - if that happens, print the manifest's real contents
-and adjust attachment_display_name()/exported_file_path() below to match.
+    {"exportedFileName": "263386A9-....png",
+     "suggestedHumanReadableName": "04-columns-grid_0_4CA571A8-....png",
+     ...}
+
+"suggestedHumanReadableName" is the name given via `XCTAttachment.name` in
+the UI test (see WidgetScreenshots/Navigation.swift's
+captureScreenshot(named:)) with an xcresulttool-appended "_<index>_<uuid>"
+suffix before the extension - stripped back off here by splitting on the
+first "_", which works because none of this repo's shot names contain one
+(see WidgetScreenshots/ScreenshotTests.swift).
 
 Usage:
     python3 Tools/organize-screenshots.py <xcresulttool-export-dir> <dest-dir> [--prefix name]
@@ -34,8 +35,6 @@ from pathlib import Path
 
 
 def find_manifest(export_dir):
-    # xcresulttool has used more than one manifest filename across Xcode
-    # versions - check the documented current one first, then fall back.
     for name in ("manifest.json", "Manifest.json"):
         candidate = export_dir / name
         if candidate.exists():
@@ -48,25 +47,36 @@ def find_manifest(export_dir):
     )
 
 
-def attachment_display_name(entry):
-    # Try every key name xcresulttool has plausibly used for the
-    # human-readable name (the one set via XCTAttachment.name in the test).
-    # A key that isn't present is quietly skipped, not treated as an error.
-    for key in ("name", "suggestedHumanReadableName", "attachmentName", "exportedFileName"):
-        value = entry.get(key)
-        if isinstance(value, str) and value:
-            return value
-    return None
+def collect_attachments(manifest):
+    """Flattens the manifest's per-test entries into a single list of
+    attachment dicts. Accepts a couple of alternate shapes defensively,
+    since only the list-of-tests-with-nested-attachments shape has actually
+    been confirmed against real xcresulttool output."""
+    if isinstance(manifest, dict):
+        manifest = manifest.get("attachments", manifest.get("data", manifest.get("tests", [])))
+    if not isinstance(manifest, list):
+        return []
+
+    attachments = []
+    for entry in manifest:
+        if not isinstance(entry, dict):
+            continue
+        nested = entry.get("attachments")
+        if isinstance(nested, list):
+            attachments.extend(a for a in nested if isinstance(a, dict))
+        elif "exportedFileName" in entry:
+            # Already a flat attachment dict - an older/alternate schema.
+            attachments.append(entry)
+    return attachments
 
 
-def exported_file_path(entry, export_dir):
-    for key in ("exportedFileName", "filename", "fileName", "path"):
-        value = entry.get(key)
-        if isinstance(value, str) and value:
-            candidate = export_dir / value
-            if candidate.exists():
-                return candidate
-    return None
+def shot_name(attachment):
+    """Recovers the exact string passed to XCTAttachment.name from
+    xcresulttool's "<name>_<index>_<uuid>" suggested name."""
+    suggested = attachment.get("suggestedHumanReadableName") or attachment.get("name")
+    if not suggested:
+        return None
+    return Path(suggested).stem.split("_")[0]
 
 
 def main():
@@ -86,26 +96,18 @@ def main():
 
     manifest_path = find_manifest(export_dir)
     manifest = json.loads(manifest_path.read_text())
-
-    # The manifest's top-level shape (a bare list vs. {"attachments": [...]})
-    # is unconfirmed - accept either.
-    if isinstance(manifest, list):
-        entries = manifest
-    elif isinstance(manifest, dict):
-        entries = manifest.get("attachments", manifest.get("data", []))
-    else:
-        entries = []
-    if not isinstance(entries, list):
-        raise SystemExit(f"Unexpected manifest shape in {manifest_path} - inspect it by hand.")
+    attachments = collect_attachments(manifest)
 
     copied = 0
-    for entry in entries:
-        if not isinstance(entry, dict):
+    for attachment in attachments:
+        exported = attachment.get("exportedFileName")
+        name = shot_name(attachment)
+        if not exported or not name:
+            print(f"  skipping unrecognized attachment entry: {attachment}")
             continue
-        name = attachment_display_name(entry)
-        src = exported_file_path(entry, export_dir)
-        if not name or not src:
-            print(f"  skipping unrecognized manifest entry: {entry}")
+        src = export_dir / exported
+        if not src.exists():
+            print(f"  exported file not found: {src}")
             continue
         dest = dest_dir / f"{prefix}{name}{src.suffix}"
         shutil.copy2(src, dest)
@@ -116,8 +118,8 @@ def main():
         raise SystemExit(
             f"No screenshots copied from {export_dir} - the manifest was read "
             f"but no entry matched the expected shape. Print {manifest_path}'s "
-            "contents and adjust attachment_display_name()/exported_file_path() "
-            "above to match its real keys."
+            "contents and adjust collect_attachments()/shot_name() above to "
+            "match its real keys."
         )
     print(f"Copied {copied} screenshot(s) into {dest_dir}")
 
