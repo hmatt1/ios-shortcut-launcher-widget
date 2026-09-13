@@ -1,6 +1,6 @@
 import XCTest
 import WidgetKit
-@testable import LauncherBoardWidget
+@testable import LauncherBoard
 
 /// Direct regression coverage for the exact bug class that caused the XL
 /// widget crash: a wrong `WidgetFamily` -> `BoardSize` mapping.

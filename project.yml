@@ -73,6 +73,11 @@ targets:
         embed: true
       - sdk: SwiftUI.framework
       - sdk: WidgetKit.framework
+      # Needed since Shared/LauncherIntent.swift and
+      # Shared/LauncherWidgetView.swift (compiled into this target too -
+      # see their header comments) import AppIntents, not because the app
+      # itself uses App Intents directly.
+      - sdk: AppIntents.framework
     # Attaches WidgetScreenshotsUITests to this target's own auto-generated
     # scheme's Test action, via XcodeGen's per-target `scheme.testTargets`
     # convenience - the only thing it changes is adding a Test action entry,
@@ -150,16 +155,21 @@ targets:
   # WidgetFamily -> BoardSize mapping that caused the XL widget crash. Runs
   # on every push via .github/workflows/build.yml (unlike the two Simulator-
   # UI-driving targets above, which are slow and either manual or on-demand).
-  # No sources of its own beyond the test files themselves, and deliberately
-  # no host application ("Host Application: None", the standard pattern for
-  # testing an app-extension's code without launching it): it depends on
-  # LauncherBoardWidget rather than re-including Widget/ or Shared/ in its
-  # own sources, and reaches every type in both via one `@testable import
-  # LauncherBoardWidget` - since that extension target's own sources are
-  # [Widget, Shared], its compiled module already contains all of it. Re-
-  # sourcing Widget/ directly here instead would recompile Widget/Widget.swift
-  # - and its `@main`-attributed LauncherBoardWidget: Widget struct - into a
-  # second target, which is the one thing this design avoids entirely.
+  # No sources of its own beyond the test files themselves.
+  #
+  # Depends on LauncherBoard (the app target), NOT LauncherBoardWidget - a
+  # first attempt at depending directly on the extension target compiled and
+  # type-checked fine but failed at LINK time on real CI ("Undefined
+  # symbols... Ld .../WidgetLogicTests ... (in target 'WidgetLogicTests')"):
+  # an app-extension's compiled .appex isn't a linkable library the way an
+  # .application is, so a host-less unit-test target can't pull symbols out
+  # of one. That's exactly why LauncherEntry/LauncherProvider/
+  # BoardSize(family:)/LauncherWidgetView and LauncherIntent live in Shared/
+  # now instead of Widget/ (see Shared/LauncherWidgetView.swift's header
+  # comment) - LauncherBoard's sources already include Shared/, so
+  # `@testable import LauncherBoard` reaches all of it, and .application is
+  # the standard, fully-supported host type for a hostless XCTest target.
+  # Widget/Widget.swift keeps only its @main registration.
   WidgetLogicTests:
     type: bundle.unit-test
     platform: iOS
@@ -173,4 +183,4 @@ targets:
         SWIFT_VERSION: "5.0"
         GENERATE_INFOPLIST_FILE: YES
     dependencies:
-      - target: LauncherBoardWidget
+      - target: LauncherBoard

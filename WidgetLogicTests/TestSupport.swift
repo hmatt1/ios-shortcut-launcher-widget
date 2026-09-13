@@ -1,11 +1,11 @@
 import XCTest
-@testable import LauncherBoardWidget
+@testable import LauncherBoard
 
 /// Shared helpers for WidgetLogicTests. This target has no host application
-/// (see project.yml's WidgetLogicTests comment) and reaches every type in
-/// Shared/ and Widget/ through this one `@testable import` of the extension
-/// target - there is no separate module boundary between "app" and "widget"
-/// code to worry about here, only this test module importing the extension's.
+/// (see project.yml's WidgetLogicTests comment) and reaches everything in
+/// Shared/ - including the widget-specific code that lives there now
+/// (Shared/LauncherIntent.swift, Shared/LauncherWidgetView.swift) - through
+/// one `@testable import` of LauncherBoard, the app target.
 
 extension XCTestCase {
     /// The standard weak-reference-after-teardown leak check: registers a

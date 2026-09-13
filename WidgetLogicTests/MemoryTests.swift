@@ -3,7 +3,7 @@ import SwiftUI
 import UIKit
 import WidgetKit
 import Darwin
-@testable import LauncherBoardWidget
+@testable import LauncherBoard
 
 /// Memory-leak and memory-ceiling coverage for the widget's rendering path.
 ///

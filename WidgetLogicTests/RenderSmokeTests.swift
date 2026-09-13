@@ -2,7 +2,7 @@ import XCTest
 import SwiftUI
 import UIKit
 import WidgetKit
-@testable import LauncherBoardWidget
+@testable import LauncherBoard
 
 /// Forces `LauncherWidgetView.body` to actually evaluate, not just
 /// construct - merely building a `View` struct never runs `body` at all
@@ -13,26 +13,29 @@ import WidgetKit
 /// unit test at all.
 ///
 /// Uses `LauncherWidgetView`'s `familyOverride`/`renderingModeOverride`/
-/// `showsContainerBackgroundOverride` init parameters (Widget/Widget.swift),
-/// not `.environment(\.widgetFamily, ...)` directly: WidgetKit's
-/// `widgetFamily`/`widgetRenderingMode`/`showsWidgetContainerBackground`
-/// environment keys are read-only outside WidgetKit's own runtime (confirmed
-/// against a real CI compile error - `KeyPath` vs the `WritableKeyPath`
-/// `.environment(_:_:)` requires - not assumed), and `WidgetPreviewContext`
-/// (the mechanism `#Preview(as:)` uses) only covers `family`, not rendering
-/// mode or container-background visibility. The override parameters default
-/// to nil in every real code path, so the actual widget host's behavior is
-/// unchanged; only these tests ever pass a non-nil value.
+/// `showsContainerBackgroundOverride` init parameters
+/// (Shared/LauncherWidgetView.swift), not `.environment(\.widgetFamily, ...)`
+/// directly: WidgetKit's `widgetFamily`/`widgetRenderingMode`/
+/// `showsWidgetContainerBackground` environment keys are read-only outside
+/// WidgetKit's own runtime (confirmed against a real CI compile error -
+/// `KeyPath` vs the `WritableKeyPath` `.environment(_:_:)` requires - not
+/// assumed), and `WidgetPreviewContext` (the mechanism `#Preview(as:)` uses)
+/// only covers `family`, not rendering mode or container-background
+/// visibility. The override parameters default to nil in every real code
+/// path, so the actual widget host's behavior is unchanged; only these tests
+/// ever pass a non-nil value.
 ///
-/// `PresetEditorView`'s own board preview (App/PresetEditor.swift) isn't
-/// reachable from here - it lives in the `LauncherBoard` app target, and
-/// this test target deliberately depends on `LauncherBoardWidget` only (see
-/// project.yml's WidgetLogicTests comment on why importing both targets'
-/// modules together would be worse, not better). That's not a real coverage
-/// gap: `PresetEditorView.boardView` and `LauncherWidgetView.body` both
-/// build on the exact same shared `BoardView`/`SlotFace`
-/// (Shared/BoardView.swift) - rendering `LauncherWidgetView` here already
-/// exercises that shared pipeline directly.
+/// This test target depends on `LauncherBoard` (the app target), not
+/// `LauncherBoardWidget` (the widget extension) - see project.yml's
+/// WidgetLogicTests comment for why (an app-extension's compiled binary
+/// isn't linkable the way an app's is, confirmed by a real CI link failure).
+/// `LauncherWidgetView`/`LauncherEntry`/etc. live in Shared/ now for exactly
+/// that reason, so `PresetEditorView`'s own board preview
+/// (App/PresetEditor.swift) is technically reachable too via this same
+/// import - not exercised here on purpose, since `PresetEditorView.boardView`
+/// and `LauncherWidgetView.body` both build on the exact same shared
+/// `BoardView`/`SlotFace` (Shared/BoardView.swift); rendering
+/// `LauncherWidgetView` already exercises that shared pipeline directly.
 @MainActor
 final class RenderSmokeTests: XCTestCase {
     /// The families Widget/Widget.swift's `.supportedFamilies(...)` actually

@@ -102,18 +102,23 @@ Shared/Layout.swift            BackgroundStyle and WidgetPosition enums
 Shared/WidgetBackground.swift  background resolver, wallpaper-slice view
 Shared/WidgetGeometry.swift    per-device widget grid; maps a slot to a wallpaper rectangle
 Shared/WallpaperStore.swift    normalises the screenshot and pre-renders one slice per slot
+Shared/LauncherIntent.swift    widget configuration intent, AppEnum/AppEntity conformances
+Shared/LauncherWidgetView.swift  timeline entry, provider, BoardSize(family:), the widget's own view
 App/App.swift                  app entry point; loads the last-edited preset
 App/PresetEditor.swift         layout/theme/background editor and live preview
 App/PresetList.swift           preset picker, reorder, duplicate, restore defaults
 App/ThemeList.swift            theme picker, reorder, duplicate, restore defaults
 App/SidePanel.swift            slide-in-from-the-edge presentation used by both list views
 App/Assets.xcassets            app icon and accent color
-Widget/LauncherIntent.swift    parameters, AppEnum conformances
-Widget/Widget.swift            provider, entry view, widget
+Widget/Widget.swift            just the @main widget-bundle registration - see Shared/LauncherWidgetView.swift
+WidgetLogicTests/                exhaustive XCTest coverage of BoardGrid/theme/widget logic - see below
+WidgetScreenshots/               XCUITest target that captures App Store screenshots - see below
 Tools/verify-layout.py           re-derives the layout arithmetic and checks it
 Tools/verify-widget-geometry.py  re-derives the wallpaper-slice rectangles and checks they stay on screen
 Tools/app-store-connect.py       pushes listing copy and the age rating via the App Store Connect API
 Tools/setup-signing.py           one-time: creates the fixed CI signing certificate and profiles
+Tools/resolve-simulator.py       picks a Simulator device type/runtime for screenshots.yml at run time
+Tools/organize-screenshots.py    extracts and renames screenshots from an xcresult bundle
 AppStore/listing.md              the listing copy itself, and Notes for Review, in prose for a human to check
 AppStore/screenshots.md          shot list for App Store screenshots
 docs/                            GitHub Pages: privacy policy and support page
