@@ -12,6 +12,18 @@ import WidgetKit
 /// host window needed, which is what makes this possible headlessly in a
 /// unit test at all.
 ///
+/// Uses `LauncherWidgetView`'s `familyOverride`/`renderingModeOverride`/
+/// `showsContainerBackgroundOverride` init parameters (Widget/Widget.swift),
+/// not `.environment(\.widgetFamily, ...)` directly: WidgetKit's
+/// `widgetFamily`/`widgetRenderingMode`/`showsWidgetContainerBackground`
+/// environment keys are read-only outside WidgetKit's own runtime (confirmed
+/// against a real CI compile error - `KeyPath` vs the `WritableKeyPath`
+/// `.environment(_:_:)` requires - not assumed), and `WidgetPreviewContext`
+/// (the mechanism `#Preview(as:)` uses) only covers `family`, not rendering
+/// mode or container-background visibility. The override parameters default
+/// to nil in every real code path, so the actual widget host's behavior is
+/// unchanged; only these tests ever pass a non-nil value.
+///
 /// `PresetEditorView`'s own board preview (App/PresetEditor.swift) isn't
 /// reachable from here - it lives in the `LauncherBoard` app target, and
 /// this test target deliberately depends on `LauncherBoardWidget` only (see
@@ -45,29 +57,40 @@ final class RenderSmokeTests: XCTestCase {
         return LauncherEntry(date: Date(), configuration: intent, sample: sample)
     }
 
+    private func render(
+        presetId: UUID,
+        sample: [String],
+        family: WidgetFamily,
+        renderingMode: WidgetRenderingMode = .fullColor,
+        showsContainerBackground: Bool = true
+    ) -> UIImage? {
+        let entry = makeEntry(presetId: presetId, sample: sample)
+        let size = canvasSize(for: family)
+        let view = LauncherWidgetView(
+            entry: entry,
+            familyOverride: family,
+            renderingModeOverride: renderingMode,
+            showsContainerBackgroundOverride: showsContainerBackground
+        )
+        .frame(width: size.width, height: size.height)
+
+        return ImageRenderer(content: view).uiImage
+    }
+
     /// Renders `LauncherWidgetView` for every supported family x every
     /// built-in preset x populated/empty data. This is the direct
-    /// regression test for the XL crash's actual failure mode: injecting
-    /// `.systemExtraLargePortrait` via the environment and forcing a real
-    /// render exercises `BoardSize(family:)` -> `BoardGrid.resolve` ->
-    /// `BoardView`/`SlotFace` exactly as WidgetKit itself would.
+    /// regression test for the XL crash's actual failure mode: forcing
+    /// `.systemExtraLargePortrait` through a real render exercises
+    /// `BoardSize(family:)` -> `BoardGrid.resolve` -> `BoardView`/`SlotFace`
+    /// exactly as WidgetKit itself would.
     func testEveryFamilyAndPresetRendersWithoutCrashing() {
         let presets = BoardPresetStore.createDefaultPresets()
         var rendered = 0
         for family in supportedFamilies {
             for preset in presets {
                 for sample in [BoardSample.names, []] {
-                    let entry = makeEntry(presetId: preset.id, sample: sample)
-                    let size = canvasSize(for: family)
-                    let view = LauncherWidgetView(entry: entry)
-                        .environment(\.widgetFamily, family)
-                        .environment(\.widgetRenderingMode, .fullColor)
-                        .environment(\.showsWidgetContainerBackground, true)
-                        .frame(width: size.width, height: size.height)
-
-                    let renderer = ImageRenderer(content: view)
                     XCTAssertNotNil(
-                        renderer.uiImage,
+                        render(presetId: preset.id, sample: sample, family: family),
                         "render failed: \(family), preset '\(preset.name)', sample.count=\(sample.count)"
                     )
                     rendered += 1
@@ -85,16 +108,10 @@ final class RenderSmokeTests: XCTestCase {
         let fullSample = (0..<BoardGrid.maxSlots).map { "Shortcut \($0)" }
         for family in supportedFamilies {
             for preset in presets {
-                let entry = makeEntry(presetId: preset.id, sample: fullSample)
-                let size = canvasSize(for: family)
-                let view = LauncherWidgetView(entry: entry)
-                    .environment(\.widgetFamily, family)
-                    .environment(\.widgetRenderingMode, .fullColor)
-                    .environment(\.showsWidgetContainerBackground, true)
-                    .frame(width: size.width, height: size.height)
-
-                let renderer = ImageRenderer(content: view)
-                XCTAssertNotNil(renderer.uiImage, "maxSlots render failed: \(family), preset '\(preset.name)'")
+                XCTAssertNotNil(
+                    render(presetId: preset.id, sample: fullSample, family: family),
+                    "maxSlots render failed: \(family), preset '\(preset.name)'"
+                )
             }
         }
     }
@@ -108,16 +125,10 @@ final class RenderSmokeTests: XCTestCase {
             return XCTFail("no default presets")
         }
         for family in supportedFamilies {
-            let entry = makeEntry(presetId: preset.id, sample: BoardSample.names)
-            let size = canvasSize(for: family)
-            let view = LauncherWidgetView(entry: entry)
-                .environment(\.widgetFamily, family)
-                .environment(\.widgetRenderingMode, .accented)
-                .environment(\.showsWidgetContainerBackground, true)
-                .frame(width: size.width, height: size.height)
-
-            let renderer = ImageRenderer(content: view)
-            XCTAssertNotNil(renderer.uiImage, "accented render failed: \(family)")
+            XCTAssertNotNil(
+                render(presetId: preset.id, sample: BoardSample.names, family: family, renderingMode: .accented),
+                "accented render failed: \(family)"
+            )
         }
     }
 
@@ -125,22 +136,16 @@ final class RenderSmokeTests: XCTestCase {
     /// contexts) is the other branch of `LauncherWidgetView`'s
     /// `showsWallpaper` condition alongside rendering mode - covered
     /// separately from the accented-mode test above since the two
-    /// environment values are independent.
+    /// values are independent.
     func testHiddenContainerBackgroundRendersWithoutCrashing() {
         guard let preset = BoardPresetStore.createDefaultPresets().first else {
             return XCTFail("no default presets")
         }
         for family in supportedFamilies {
-            let entry = makeEntry(presetId: preset.id, sample: BoardSample.names)
-            let size = canvasSize(for: family)
-            let view = LauncherWidgetView(entry: entry)
-                .environment(\.widgetFamily, family)
-                .environment(\.widgetRenderingMode, .fullColor)
-                .environment(\.showsWidgetContainerBackground, false)
-                .frame(width: size.width, height: size.height)
-
-            let renderer = ImageRenderer(content: view)
-            XCTAssertNotNil(renderer.uiImage, "hidden-container-background render failed: \(family)")
+            XCTAssertNotNil(
+                render(presetId: preset.id, sample: BoardSample.names, family: family, showsContainerBackground: false),
+                "hidden-container-background render failed: \(family)"
+            )
         }
     }
 }

@@ -24,12 +24,19 @@ final class MemoryTests: XCTestCase {
         return LauncherEntry(date: Date(), configuration: intent, sample: sample)
     }
 
+    /// Uses `LauncherWidgetView`'s override init params (Widget/Widget.swift),
+    /// not `.environment(\.widgetFamily, ...)` - see RenderSmokeTests.swift's
+    /// header comment for why: those WidgetKit environment keys are
+    /// read-only outside its own runtime, confirmed via a real CI compile
+    /// error.
     private func makeView(presetId: UUID) -> some View {
-        LauncherWidgetView(entry: makeEntry(presetId: presetId, sample: BoardSample.names))
-            .environment(\.widgetFamily, .systemExtraLargePortrait)
-            .environment(\.widgetRenderingMode, .fullColor)
-            .environment(\.showsWidgetContainerBackground, true)
-            .frame(width: 364, height: 594)
+        LauncherWidgetView(
+            entry: makeEntry(presetId: presetId, sample: BoardSample.names),
+            familyOverride: .systemExtraLargePortrait,
+            renderingModeOverride: .fullColor,
+            showsContainerBackgroundOverride: true
+        )
+        .frame(width: 364, height: 594)
     }
 
     // MARK: - Leak checks

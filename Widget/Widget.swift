@@ -52,9 +52,36 @@ extension BoardSize {
 struct LauncherWidgetView: View {
     let entry: LauncherEntry
 
-    @Environment(\.widgetFamily) private var family
-    @Environment(\.widgetRenderingMode) private var renderingMode
-    @Environment(\.showsWidgetContainerBackground) private var showsContainerBackground
+    @Environment(\.widgetFamily) private var environmentFamily
+    @Environment(\.widgetRenderingMode) private var environmentRenderingMode
+    @Environment(\.showsWidgetContainerBackground) private var environmentShowsContainerBackground
+
+    /// Test-only overrides. Every real code path leaves these nil, so the
+    /// three environment values above - set by WidgetKit itself, which
+    /// (unlike most SwiftUI environment keys) can't be written from outside
+    /// its own runtime via a plain `.environment(_:_:)` modifier - are used
+    /// completely unchanged; only WidgetLogicTests' RenderSmokeTests.swift
+    /// and MemoryTests.swift ever pass a non-nil value here, to force a real
+    /// render pass for a specific family/mode outside an actual widget host.
+    var familyOverride: WidgetFamily?
+    var renderingModeOverride: WidgetRenderingMode?
+    var showsContainerBackgroundOverride: Bool?
+
+    init(
+        entry: LauncherEntry,
+        familyOverride: WidgetFamily? = nil,
+        renderingModeOverride: WidgetRenderingMode? = nil,
+        showsContainerBackgroundOverride: Bool? = nil
+    ) {
+        self.entry = entry
+        self.familyOverride = familyOverride
+        self.renderingModeOverride = renderingModeOverride
+        self.showsContainerBackgroundOverride = showsContainerBackgroundOverride
+    }
+
+    private var family: WidgetFamily { familyOverride ?? environmentFamily }
+    private var renderingMode: WidgetRenderingMode { renderingModeOverride ?? environmentRenderingMode }
+    private var showsContainerBackground: Bool { showsContainerBackgroundOverride ?? environmentShowsContainerBackground }
 
     var body: some View {
         let size = BoardSize(family: family)
