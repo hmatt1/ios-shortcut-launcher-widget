@@ -1,4 +1,6 @@
+import SwiftUI
 import WidgetKit
+import AppIntents
 
 /// Everything but this registration itself now lives in `Shared/`
 /// (`LauncherEntry`, `LauncherProvider`, `BoardSize(family:)`,
