@@ -37,13 +37,7 @@ The widget reads the preset via `BoardPresetStore.loadRaw()`. Saving an edit in 
 
 If an existing widget on a user's home screen was placed with the older version of the app, its `LauncherIntent` will have outdated properties. The `LauncherIntent` now uses an `EntityQuery` to look up the new `preset` parameter. By fallback, any corrupted or unreadable store automatically resolves to a built-in `Default` preset, avoiding blank widgets during upgrades.
 
-`BoardGrid.resolve` is pure arithmetic, so its invariants are checkable without a simulator:
-
-```bash
-python3 Tools/verify-layout.py
-```
-
-That walks every family, shortcut count, explicit column count, template, published iPhone widget canvas and a range of name lengths, and asserts that no cell shrinks below 1pt, that a tile's padded content area never shrinks below 1pt either (padding degrades toward 0 as a last resort, after spacing and margin, so it can never hide a name the way an undegraded padding could in row mode), that the chosen text style still fits on every device rather than only on the smallest, that resolved values match requested values when space permits, and that every accent clears 4.5:1 against its label and 1.5:1 against both background stops. Run it after touching `Shared/BoardGrid.swift`, `Shared/BoardPreset.swift`, or `Shared/Theme.swift`.
+`BoardGrid.resolve` is pure arithmetic, so its invariants are checkable exhaustively, and are - by `WidgetLogicTests/BoardGridTests.swift`, an XCTest target that calls the real function directly (`xcodebuild test -only-testing:WidgetLogicTests`, run on every push via `.github/workflows/build.yml`). It walks every family, shortcut count, explicit column count, template and a range of name lengths, and asserts that no cell shrinks below 1pt, that resolved values match requested values when space permits, and that degradation always reduces spacing before margin. `WidgetLogicTests/ThemeContrastTests.swift` separately asserts every accent clears 4.5:1 against its label and 1.5:1 against both background stops. This replaced an earlier from-scratch Python re-implementation of the same math (`Tools/verify-layout.py`) - a translation bug between the two could never have been caught that way, since the model was independent of the real code; calling `BoardGrid.resolve` directly closed that gap, and did in fact catch one real bug (a `visibleSlots` cap that only misbehaved past `BoardGrid.maxSlots`) the first time it ran for real.
 
 ### Density templates
 
@@ -57,13 +51,13 @@ Tiles keep their rounded corners even at `Flush`, where there is no gap at all: 
 
 Full color adds exactly one thing on top: a flat surface per tile and a background. No gradients on tiles, no strokes, no shadows, and no `Material` or `.glassEffect` on a tile anywhere. Liquid Glass belongs to the system.
 
-Every accent in the eight chromatic themes (`Shared/Theme.swift`; `Ink` and `Paper` are monochrome) clears 4.5:1 against its label color and 1.5:1 against both of its theme's background stops. Contrast is fixed in the palette and checked by `Tools/verify-layout.py`, never computed at runtime.
+Every accent in the eight chromatic themes (`Shared/Theme.swift`; `Ink` and `Paper` are monochrome) clears 4.5:1 against its label color and 1.5:1 against both of its theme's background stops. Contrast is fixed in the palette and checked by `WidgetLogicTests/ThemeContrastTests.swift`, never computed at runtime.
 
 ## Background
 
 Three styles: **Solid Color** (the theme background), **System Default** (a plain system material), and **Transparent**.
 
-Transparent blends the widget into the wallpaper. iOS never lets a widget read the Home Screen, so the person uploads a screenshot of their wallpaper and picks which of nine slots the widget sits in. On upload the app normalises the screenshot to the device's exact native pixels — once, in the app process, with no JPEG pass and no rescale — then slices one small PNG per slot (`Shared/WidgetGeometry.swift` holds the per-device grid) into the App Group container. The widget loads only its single slice, so it never carries a full-screen bitmap into the extension's tight memory budget. `Tools/verify-widget-geometry.py` asserts every slice rectangle stays fully on screen.
+Transparent blends the widget into the wallpaper. iOS never lets a widget read the Home Screen, so the person uploads a screenshot of their wallpaper and picks which of nine slots the widget sits in. On upload the app normalises the screenshot to the device's exact native pixels — once, in the app process, with no JPEG pass and no rescale — then slices one small PNG per slot (`Shared/WidgetGeometry.swift` holds the per-device grid) into the App Group container. The widget loads only its single slice, so it never carries a full-screen bitmap into the extension's tight memory budget. `WidgetLogicTests/WidgetGeometryTests.swift` asserts every slice rectangle stays fully on screen, against the real `WidgetGeometry.frame` function.
 
 The slice is drawn as widget *content*, beneath the board, and the container background is kept clear, so the system's Liquid Glass never composites over it. A faint Liquid Glass rim around the widget itself is drawn by iOS 27 and is not app-removable; `Settings › Display & Brightness › Liquid Glass` is the only control over it.
 
@@ -113,8 +107,6 @@ App/Assets.xcassets            app icon and accent color
 Widget/Widget.swift            just the @main widget-bundle registration - see Shared/LauncherWidgetView.swift
 WidgetLogicTests/                exhaustive XCTest coverage of BoardGrid/theme/widget logic - see below
 WidgetScreenshots/               XCUITest target that captures App Store screenshots - see below
-Tools/verify-layout.py           re-derives the layout arithmetic and checks it
-Tools/verify-widget-geometry.py  re-derives the wallpaper-slice rectangles and checks they stay on screen
 Tools/app-store-connect.py       pushes listing copy and the age rating via the App Store Connect API
 Tools/setup-signing.py           one-time: creates the fixed CI signing certificate and profiles
 Tools/resolve-simulator.py       picks a Simulator device type/runtime for screenshots.yml at run time
@@ -137,6 +129,7 @@ While building this widget, we encountered and resolved several strict Apple req
 5. **Widget Intent Constraints:** The iOS 27 `RunSystemShortcutIntent` is only valid when explicitly passed into a `Button(intent:)` initializer within the widget's view.
 6. **Two Different "Extra Large" Families:** `WidgetFamily.systemExtraLarge` (iOS 15+) is the original iPad/Mac-landscape extra-large widget and has never been offered on the iPhone Home Screen, regardless of what `supportedFamilies` declares — it shows as an unselectable size rather than working or disappearing outright. The iOS 27 "4×6, fills a whole Home Screen page" extra-large widget on iPhone is a separate, newer case, `WidgetFamily.systemExtraLargePortrait` (new in iOS/iPadOS/macOS 27, carried over from visionOS 26), and that's the one `BoardSize.extraLarge`'s canvas was actually built for. `Widget.swift` declares `.systemExtraLargePortrait`, not `.systemExtraLarge`. Both targets also build universal (`TARGETED_DEVICE_FAMILY: "1,2"`) with `UISupportedInterfaceOrientations` declared on the App target, since the same family is selectable on iPadOS 27 too and App Store Connect requires an explicit orientation list once a target can run on iPad.
 7. **Automatic Signing Exhausts Itself on Ephemeral CI:** `CODE_SIGN_STYLE: Automatic` mints a new Development certificate whenever a runner's keychain doesn't already have one — but a certificate's private key is generated locally and never leaves that keychain, so every certificate created by a fresh CI runner is permanently unusable the moment the job ends. Enough pushes to `main` and Apple's per-account certificate cap gets hit ("Choose a certificate to revoke"), breaking every build after it. The fix is a certificate that's never regenerated: `Tools/setup-signing.py` creates one Apple Distribution certificate and two App Store provisioning profiles (app + widget) via the App Store Connect API, run once, locally, since the private key it creates must never touch this public repo's CI logs or artifacts. The Release config in `project.yml` switched to `CODE_SIGN_STYLE: Manual` pointing at that fixed certificate/profiles, and the workflow imports it into a throwaway keychain on every run instead of asking Apple for a new one.
+8. **A Host-less Unit Test Target Can't Link Against an App Extension:** Testing an app extension's actual code (not a Python re-implementation of it) seems like it should mean depending directly on the extension target and using `@testable import` - and that compiles and type-checks cleanly. It fails at *link* time instead: `WidgetLogicTests`'s linker reported "Undefined symbols for architecture arm64" for every symbol in the extension, because an `.appex`'s compiled binary isn't a linkable library the way a `.framework` or `.application` is - a host-less XCTest target (`bundle.unit-test`, no `TEST_HOST`) needs to link against a real application or framework product, not an extension's. The fix was moving everything but the `@main` widget-bundle registration itself out of `Widget/` and into `Shared/` (`Shared/LauncherIntent.swift`, `Shared/LauncherWidgetView.swift`), so `WidgetLogicTests` could depend on `LauncherBoard` (the app target) instead — `.application` is the standard, actually-linkable host type for this pattern.
 
 ## License
 
