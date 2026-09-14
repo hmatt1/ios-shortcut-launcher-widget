@@ -98,15 +98,36 @@ final class EnterJiggleModeTests: XCTestCase {
         attachTree(named: "06-springboard-accessibility-tree-after-add-widget")
 
         // 8. Confirmed by round 3: this opens the widget gallery directly -
-        // a search field plus an alphabetical list of cells, one of which
-        // is already "Shortcut Launcher Widget" (no search needed - few
-        // enough apps are installed that it's visible without filtering).
-        // Round 4's screenshot after tapping it looked visually identical
-        // to round 3's (same gallery), which is ambiguous by itself - could
-        // mean the tap missed, or that this redesigned flow expands
-        // in-place rather than navigating. Logging the query's own state
-        // explicitly this round instead of inferring from another
-        // screenshot.
+        // a search field ("Search Widgets") plus an alphabetical list of
+        // cells in a collection view (identifier 'add-sheet-collection-view').
+        //
+        // Round 4/5 found the real reason a direct `cells["Shortcut Launcher
+        // Widget"]` query kept failing: it's not a query-syntax problem, it's
+        // that the cell is never realized in XCUITest's accessibility
+        // snapshot in the first place. Round 5's failure diagnostics (an
+        // XCTest-captured "Complete Issue Description" + this cell's own
+        // "Debug description") listed the full set of cells the snapshot
+        // actually saw - eleven, ending at "Reminders" - and "Shortcut
+        // Launcher Widget" (alphabetically last, right after "Safari") was
+        // not among them. Round 5's screenshot confirmed why: it's the very
+        // last row, clipped at the bottom edge of the collection view's own
+        // frame, effectively off-screen. Scrolling by a guessed offset would
+        // be another guess; searching is the documented purpose of the
+        // search field that's already right there, so it's what this round
+        // uses instead.
+        let searchField = springboard.searchFields["Search Widgets"]
+        let searchFieldExisted = searchField.waitForExistence(timeout: 3)
+        if searchFieldExisted {
+            searchField.tap()
+            searchField.typeText("Shortcut Launcher Widget")
+        }
+
+        let afterSearch = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        afterSearch.name = "07-after-searching"
+        afterSearch.lifetime = .keepAlways
+        add(afterSearch)
+        attachTree(named: "08-springboard-accessibility-tree-after-searching")
+
         let widgetCell = springboard.cells["Shortcut Launcher Widget"]
         let existedBeforeTap = widgetCell.waitForExistence(timeout: 3)
         let hittableBeforeTap = widgetCell.isHittable
@@ -116,20 +137,21 @@ final class EnterJiggleModeTests: XCTestCase {
         let existsAfterTap = widgetCell.exists
 
         let status = """
+        searchField existed: \(searchFieldExisted)
         widgetCell existed before tap: \(existedBeforeTap)
         widgetCell was hittable before tap: \(hittableBeforeTap)
         widgetCell frame before tap: \(widgetCell.frame)
         widgetCell still exists after tap (by the same query): \(existsAfterTap)
         """
         let statusAttachment = XCTAttachment(data: Data(status.utf8))
-        statusAttachment.name = "07-tap-status"
+        statusAttachment.name = "09-tap-status"
         statusAttachment.lifetime = .keepAlways
         add(statusAttachment)
 
         let afterSelectingWidget = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
-        afterSelectingWidget.name = "08-after-selecting-widget"
+        afterSelectingWidget.name = "10-after-selecting-widget"
         afterSelectingWidget.lifetime = .keepAlways
         add(afterSelectingWidget)
-        attachTree(named: "09-springboard-accessibility-tree-after-selecting-widget")
+        attachTree(named: "11-springboard-accessibility-tree-after-selecting-widget")
     }
 }
