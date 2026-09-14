@@ -96,5 +96,21 @@ final class EnterJiggleModeTests: XCTestCase {
         afterAddWidget.lifetime = .keepAlways
         add(afterAddWidget)
         attachTree(named: "06-springboard-accessibility-tree-after-add-widget")
+
+        // 8. Confirmed by round 3: this opens the widget gallery directly -
+        // a search field plus an alphabetical list of cells, one of which
+        // is already "Shortcut Launcher Widget" (no search needed - few
+        // enough apps are installed that it's visible without filtering).
+        // Tap it and capture whatever size-picker/preview screen follows.
+        let widgetCell = springboard.cells["Shortcut Launcher Widget"]
+        if widgetCell.waitForExistence(timeout: 3) {
+            widgetCell.tap()
+        }
+
+        let afterSelectingWidget = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        afterSelectingWidget.name = "07-after-selecting-widget"
+        afterSelectingWidget.lifetime = .keepAlways
+        add(afterSelectingWidget)
+        attachTree(named: "08-springboard-accessibility-tree-after-selecting-widget")
     }
 }
