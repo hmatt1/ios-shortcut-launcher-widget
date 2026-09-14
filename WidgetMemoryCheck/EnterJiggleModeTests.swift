@@ -81,5 +81,20 @@ final class EnterJiggleModeTests: XCTestCase {
         afterEdit.lifetime = .keepAlways
         add(afterEdit)
         attachTree(named: "04-springboard-accessibility-tree-after-edit")
+
+        // 7. Confirmed by round 2: "Edit" opens a menu whose first item is
+        // a real, directly-tappable "Add Widget" button (with a
+        // "widget.small.badge.plus" icon). Tap it and capture the widget
+        // gallery it should open.
+        let addWidgetButton = springboard.buttons["Add Widget"]
+        if addWidgetButton.waitForExistence(timeout: 3) {
+            addWidgetButton.tap()
+        }
+
+        let afterAddWidget = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        afterAddWidget.name = "05-after-tapping-add-widget"
+        afterAddWidget.lifetime = .keepAlways
+        add(afterAddWidget)
+        attachTree(named: "06-springboard-accessibility-tree-after-add-widget")
     }
 }
