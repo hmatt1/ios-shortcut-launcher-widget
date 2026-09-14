@@ -1,21 +1,26 @@
-name: Widget Memory Check (Phase A - Diagnostics)
+name: Widget Memory Check
 
-# Manual only. Phase A of a real .appex memory-footprint check: gets the
-# actual widget extension running by placing it on a Simulator Home Screen,
-# which needs SpringBoard automation this project has zero prior grounding
-# in (doubly so on iOS 27). This run's whole job is producing real
-# diagnostics (a screenshot + SpringBoard's accessibility tree) to write
-# the rest of that automation from - see
-# WidgetMemoryCheck/EnterJiggleModeTests.swift's header comment and the
-# plan this was built from. Deliberately does NOT fail the workflow based
-# on whether jiggle mode visibly engaged - the test itself has no
-# assertions - so the diagnostics always come out for a human to read.
+# Manual only. Phase A automated placing the real widget extension on a
+# Simulator Home Screen - SpringBoard automation this project had zero
+# prior grounding in (doubly so on iOS 27) - across 7 rounds of real CI
+# diagnostics (screenshots + SpringBoard's accessibility tree) rather than
+# guessing the flow blind. See WidgetMemoryCheck/EnterJiggleModeTests.swift's
+# header comment and the plan this was built from.
+#
+# Phase B (this workflow's "Measure..." step below) reads the now-running
+# extension's real physical-footprint via `footprint`, the same ledger
+# value the kernel's own jetsam/memory-pressure accounting uses - not just
+# RSS. Still not a hard pass/fail gate: whether the extension is even still
+# alive by the time this step runs, and whether `footprint` needs elevated
+# privileges on this runner, are both genuinely unconfirmed until a real
+# run reports them. A threshold gets added only once a real baseline
+# reading exists to set one from.
 on:
   workflow_dispatch:
 
 jobs:
   diagnose:
-    name: Enter Jiggle Mode and Capture Diagnostics
+    name: Place Widget and Measure Memory Footprint
     runs-on: xcode-27
 
     steps:
@@ -49,6 +54,51 @@ jobs:
             -destination "platform=iOS Simulator,id=$IPHONE_UDID" \
             -resultBundlePath jiggle.xcresult \
             -only-testing:WidgetMemoryCheckUITests
+
+      - name: Measure Widget Extension Memory Footprint
+        if: always()
+        run: |
+          # Phase B: round 7 of WidgetMemoryCheckUITests confirmed the
+          # widget actually lands on the Simulator's Home Screen, so its
+          # extension process should now be running like any other
+          # Simulator-hosted process - directly inspectable from the CI
+          # host. `footprint -pid <pid> -j <path>` is Apple's own tool for
+          # this reading; its `phys_footprint` field is the real ledger
+          # value, not just RSS (see Tools/print-footprint.py).
+          #
+          # Two things this project's research couldn't confirm ahead of a
+          # real run: whether the extension is still alive by the time this
+          # step executes (WidgetKit may suspend/terminate it), and whether
+          # `footprint` needs elevated privileges here. Diagnosing both
+          # rather than guessing - this step's own output is the ground
+          # truth a hard threshold will eventually be written from.
+          WIDGET_PID=$(pgrep -f LauncherBoardWidget | head -n 1 || true)
+          if [ -z "$WIDGET_PID" ]; then
+            echo "No LauncherBoardWidget process found via pgrep."
+            echo "All Simulator/widget-related processes, for context:"
+            ps aux | grep -i -E "simulator|widget" | grep -v grep || true
+          else
+            echo "Found LauncherBoardWidget extension process: PID $WIDGET_PID"
+            if footprint -pid "$WIDGET_PID" -j footprint.json; then
+              echo "footprint succeeded without elevated privileges."
+            elif sudo -n footprint -pid "$WIDGET_PID" -j footprint.json; then
+              echo "footprint required 'sudo -n' to run."
+            else
+              echo "footprint failed both with and without 'sudo -n'."
+            fi
+            if [ -f footprint.json ]; then
+              cat footprint.json
+              python3 Tools/print-footprint.py footprint.json || true
+            fi
+          fi
+
+      - name: Upload Footprint Reading
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: widget-footprint-reading
+          path: footprint.json
+          if-no-files-found: warn
 
       - name: Extract Diagnostics
         if: always()
