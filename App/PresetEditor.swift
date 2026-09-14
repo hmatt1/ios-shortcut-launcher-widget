@@ -80,6 +80,17 @@ struct PresetEditorView: View {
     /// most one menu, even if it wanders past the 50pt trigger distance
     /// more than once (e.g. a shaky drag that crosses back over itself).
     @State private var edgeSwipeConsumed = false
+    /// This view's own actual width, tracked via GeometryReader below - NOT
+    /// `UIScreen.main.bounds.width`, which is the full physical device
+    /// screen regardless of how large this app's own window actually is.
+    /// On iPhone those are normally the same number; on iPad, in Split View
+    /// or Stage Manager (or even iPhone-compatibility mode on iPad, if this
+    /// app is ever marked iPhone-only), they aren't - the right-edge swipe
+    /// threshold in `edgeSwipeGesture` below would compare a window-relative
+    /// touch location against the wrong, much larger number and effectively
+    /// never trigger. The device width is a reasonable value before the
+    /// first layout pass reports the real one.
+    @State private var containerWidth: CGFloat = UIScreen.main.bounds.width
     
     var onShowPresets: () -> Void
     
@@ -348,6 +359,13 @@ struct PresetEditorView: View {
             )
             .ignoresSafeArea()
         }
+        .background {
+            GeometryReader { proxy in
+                Color.clear
+                    .onAppear { containerWidth = proxy.size.width }
+                    .onChange(of: proxy.size.width) { _, newWidth in containerWidth = newWidth }
+            }
+        }
         .simultaneousGesture(edgeSwipeGesture)
         .sidePanel(edge: .trailing, isPresented: $showingThemeList) {
             ThemeListView(selectedId: Binding(
@@ -378,7 +396,7 @@ struct PresetEditorView: View {
                 let vertical = value.translation.height
                 guard abs(horizontal) > abs(vertical) * 1.5 else { return }
 
-                let screenWidth = UIScreen.main.bounds.width
+                let screenWidth = containerWidth
                 if value.startLocation.x < edgeBand, horizontal > 50 {
                     edgeSwipeConsumed = true
                     onShowPresets()

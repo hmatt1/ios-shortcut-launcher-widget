@@ -30,11 +30,29 @@ struct SidePanel<PanelContent: View>: ViewModifier {
     /// open/close animation, the 30%-of-width commit threshold — already
     /// worked in terms of `width` rather than a hardcoded number, so taking
     /// over the full screen needed no other change.
-    private var width: CGFloat { UIScreen.main.bounds.width }
+    ///
+    /// Tracked via GeometryReader below rather than read as
+    /// `UIScreen.main.bounds.width` directly - that's the full physical
+    /// device screen, not this content's own actual width, and the two
+    /// aren't the same in iPad Split View or Stage Manager (or even iPhone-
+    /// compatibility mode on iPad). Sizing the panel and its drag math
+    /// against the wrong, larger number there would overflow the panel past
+    /// this app's real window and put the drag-to-dismiss threshold in the
+    /// wrong place. The device width is a reasonable value before the first
+    /// layout pass reports the real one.
+    @State private var containerWidth: CGFloat = UIScreen.main.bounds.width
+    private var width: CGFloat { containerWidth }
     private let spring = Animation.interactiveSpring(response: 0.32, dampingFraction: 0.86)
 
     func body(content: Content) -> some View {
         content
+            .background {
+                GeometryReader { proxy in
+                    Color.clear
+                        .onAppear { containerWidth = proxy.size.width }
+                        .onChange(of: proxy.size.width) { _, newWidth in containerWidth = newWidth }
+                }
+            }
             .overlay {
                 if mounted {
                     // The ZStack ignores the safe area so the scrim and the panel's
