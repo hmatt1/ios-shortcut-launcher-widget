@@ -47,7 +47,7 @@ public struct BoardPreset: Codable, Sendable, Identifiable, Equatable {
     }
 
     enum CodingKeys: CodingKey {
-        case id, name, columns, marginX, marginY, spacingX, spacingY, paddingX, paddingY, cornerRadius, outerCornerRadius, themeId, theme, background
+        case id, name, columns, marginX, marginY, spacingX, spacingY, paddingX, paddingY, cornerRadius, outerCornerRadius, themeId, background
     }
 
     public init(from decoder: Decoder) throws {
@@ -63,18 +63,10 @@ public struct BoardPreset: Codable, Sendable, Identifiable, Equatable {
         paddingY = try container.decode(CGFloat.self, forKey: .paddingY)
         cornerRadius = try container.decode(CGFloat.self, forKey: .cornerRadius)
         outerCornerRadius = try container.decodeIfPresent(CGFloat.self, forKey: .outerCornerRadius) ?? cornerRadius
-        // Lenient: a value written by an older build (e.g. a removed style) must
-        // never throw here, or one bad preset drops the whole store.
+        // Lenient: a value written with an unknown/removed style must never
+        // throw here, or one bad preset drops the whole store.
         background = (try? container.decode(BackgroundStyle.self, forKey: .background)) ?? .theme
-        
-        if let decodedThemeId = try container.decodeIfPresent(UUID.self, forKey: .themeId) {
-            themeId = decodedThemeId
-        } else if let oldTheme = try container.decodeIfPresent(Theme.self, forKey: .theme) {
-            // Migrate from the old Theme enum straight to its built-in's stable id.
-            themeId = BoardThemeStore.defaultThemeId(for: oldTheme)
-        } else {
-            themeId = BoardThemeStore.defaultThemeId(for: .ink)
-        }
+        themeId = try container.decodeIfPresent(UUID.self, forKey: .themeId) ?? BoardThemeStore.defaultThemeId(for: .ink)
     }
 
     public func encode(to encoder: Encoder) throws {

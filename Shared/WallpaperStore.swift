@@ -18,10 +18,16 @@ final class WallpaperStore: ObservableObject {
 
     private let defaults = AppGroup.defaults
 
-    private static let tokenKey = "wallpaperToken"
-    private static let screenWKey = "wallpaperScreenW"   // points
-    private static let screenHKey = "wallpaperScreenH"   // points
-    private static let scaleKey = "wallpaperScale"
+    // nonisolated: plain string constants, but `token`/`cropsDir`/`render`
+    // below are themselves nonisolated static functions (they run off the
+    // main actor), and reading a MainActor-isolated static from a
+    // nonisolated context is a hard error under the Swift 6 language mode -
+    // already visible as a warning in CI ("this is an error in the Swift 6
+    // language mode") even under this project's current Swift 5 mode.
+    private nonisolated static let tokenKey = "wallpaperToken"
+    private nonisolated static let screenWKey = "wallpaperScreenW"   // points
+    private nonisolated static let screenHKey = "wallpaperScreenH"   // points
+    private nonisolated static let scaleKey = "wallpaperScale"
 
     /// Whether a wallpaper has been stored. Drives the app's "uploaded" tick.
     @Published var hasWallpaper: Bool = false

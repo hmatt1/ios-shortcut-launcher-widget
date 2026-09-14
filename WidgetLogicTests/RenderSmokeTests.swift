@@ -151,4 +151,36 @@ final class RenderSmokeTests: XCTestCase {
             )
         }
     }
+
+    /// None of the 11 built-in presets use `.transparent`
+    /// (BoardPresetStore.createDefaultPresets()), so nothing above ever
+    /// exercises `LauncherWidgetView`'s `showsWallpaper`/`WallpaperCropImage`
+    /// branch - a real, previously silent gap, structurally identical to the
+    /// once-untested XL family mapping before `WidgetProviderTests` existed.
+    /// Adds a preset to `BoardPresetStore.shared` (removed again at the end)
+    /// rather than constructing a standalone `BoardPreset` value, since
+    /// `LauncherWidgetView` resolves its preset by id through
+    /// `BoardPresetStore.loadPreset(id:)` - a fresh read straight from
+    /// `AppGroup.defaults`, not from the singleton's in-memory array - so
+    /// this only actually exercises the intended branch when a real App
+    /// Group container is available; skipped otherwise rather than passing
+    /// for the wrong reason (a silent fallback to some other preset).
+    func testTransparentBackgroundRendersWithoutCrashing() throws {
+        guard AppGroup.defaults != nil else {
+            throw XCTSkip("App Group container is unavailable in this environment - a preset created via the store never reaches loadPreset(id:), so the transparent-background path isn't exercised here.")
+        }
+        let store = BoardPresetStore.shared
+        let created = store.create(name: "RenderSmokeTests-transparent")
+        var transparent = created
+        transparent.background = .transparent
+        store.update(transparent)
+        defer { store.delete(id: created.id) }
+
+        for family in supportedFamilies {
+            XCTAssertNotNil(
+                render(presetId: created.id, sample: BoardSample.names, family: family),
+                "transparent-background render failed: \(family)"
+            )
+        }
+    }
 }

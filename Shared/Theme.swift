@@ -52,20 +52,15 @@ public struct ThemeSpec: Sendable, Codable, Equatable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         accents = try container.decode([RGB].self, forKey: .accents)
         background = try container.decode([RGB].self, forKey: .background)
-        
-        if let singleLabel = try? container.decode(RGB.self, forKey: .labels) {
-            labels = Array(repeating: singleLabel, count: 12)
-        } else if let labelsArray = try? container.decode([RGB].self, forKey: .labels) {
-            labels = labelsArray
-        } else {
-            labels = Array(repeating: RGB(0xFFFFFF), count: 12)
-        }
+        // Lenient: a missing or corrupted labels array must never throw here,
+        // or one bad theme drops the whole store.
+        labels = (try? container.decode([RGB].self, forKey: .labels)) ?? Array(repeating: RGB(0xFFFFFF), count: 12)
     }
-    
+
     enum CodingKeys: String, CodingKey {
         case accents
         case background
-        case labels = "label" // map old "label" key to "labels"
+        case labels
     }
 }
 
