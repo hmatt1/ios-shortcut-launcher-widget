@@ -97,14 +97,17 @@ struct ThemeListView: View {
         }
     }
     
-    private func deleteTheme(_ theme: BoardTheme) {
+    /// Not `private`: WidgetLogicTests/PresetListLogicTests.swift calls this
+    /// directly to verify the delete-reassigns-selection behavior without
+    /// driving the real List UI.
+    func deleteTheme(_ theme: BoardTheme) {
         store.delete(id: theme.id)
         if selectedId == theme.id.uuidString {
             selectedId = store.themes.first?.id.uuidString ?? ""
         }
     }
-    
-    private func deleteItems(offsets: IndexSet) {
+
+    func deleteItems(offsets: IndexSet) {
         for index in offsets {
             let theme = store.themes[index]
                 deleteTheme(theme)

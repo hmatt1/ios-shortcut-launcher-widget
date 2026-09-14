@@ -23,6 +23,12 @@ jobs:
       - name: Install dependencies
         run: brew install xcodegen ldid
 
+      - name: Run Tool Script Tests
+        # Fast, pure-Python unit tests for Tools/*.py's own logic
+        # (organize-screenshots.py, resolve-simulator.py) - catches a
+        # regression there before spending any time on the Swift side.
+        run: python3 -m unittest discover -s Tools -p 'test_*.py'
+
       - name: Generate Xcode Project
         run: xcodegen generate
 

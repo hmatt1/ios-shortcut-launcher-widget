@@ -37,31 +37,46 @@ def newest(candidates, key):
     return sorted(candidates, key=key)[-1]
 
 
-def main():
-    devicetypes = simctl_json("devicetypes")["devicetypes"]
+# Device-type identifiers embed the generation as a plain number (e.g.
+# "...iPhone-17-Pro-Max"), so a plain string sort orders them correctly as
+# long as the number stays 2 digits - true today, and cheap to revisit if it
+# ever isn't. Factored out of main() (one function per selection) so each is
+# directly unit-testable against a synthetic devicetypes/runtimes list -
+# see Tools/test_resolve_simulator.py.
 
-    # Device-type identifiers embed the generation as a plain number (e.g.
-    # "...iPhone-17-Pro-Max"), so a plain string sort orders them correctly
-    # as long as the number stays 2 digits - true today, and cheap to
-    # revisit if it ever isn't.
-    iphone = newest(
+def find_iphone_pro_max(devicetypes):
+    return newest(
         [t for t in devicetypes if "iPhone" in t["name"] and "Pro Max" in t["name"]],
         key=lambda t: t["identifier"],
     )
-    ipad = newest(
+
+
+def find_ipad_pro(devicetypes):
+    return newest(
         [t for t in devicetypes if "iPad Pro" in t["name"]],
         key=lambda t: t["identifier"],
     )
+
+
+def find_latest_ios_runtime(runtimes):
+    return newest(
+        [r for r in runtimes if r["name"].startswith("iOS") and r.get("isAvailable", True)],
+        key=lambda r: r["version"],
+    )
+
+
+def main():
+    devicetypes = simctl_json("devicetypes")["devicetypes"]
+
+    iphone = find_iphone_pro_max(devicetypes)
+    ipad = find_ipad_pro(devicetypes)
     if not iphone or not ipad:
         print("Could not resolve a simulator device type. Available device types:", file=sys.stderr)
         print(json.dumps(devicetypes, indent=2), file=sys.stderr)
         sys.exit(1)
 
     runtimes = simctl_json("runtimes")["runtimes"]
-    runtime = newest(
-        [r for r in runtimes if r["name"].startswith("iOS") and r.get("isAvailable", True)],
-        key=lambda r: r["version"],
-    )
+    runtime = find_latest_ios_runtime(runtimes)
     if not runtime:
         print("Could not resolve an iOS simulator runtime. Available runtimes:", file=sys.stderr)
         print(json.dumps(runtimes, indent=2), file=sys.stderr)

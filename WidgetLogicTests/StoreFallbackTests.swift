@@ -113,4 +113,44 @@ final class StoreFallbackTests: XCTestCase {
         store.restoreDefaultPresets()
         XCTAssertTrue(store.presets.contains(where: matches), "restoring should bring the deleted built-in's look back")
     }
+
+    // MARK: - duplicate(id:)
+
+    func testDuplicatingAPresetInsertsAnIdenticalLookRightAfterTheOriginal() {
+        let store = BoardPresetStore.shared
+        let original = store.create(name: "StoreFallbackTests-duplicate-source")
+        store.duplicate(id: original.id)
+
+        guard let originalIndex = store.presets.firstIndex(where: { $0.id == original.id }) else {
+            return XCTFail("the original preset should still be present")
+        }
+        let copy = store.presets[originalIndex + 1]
+        XCTAssertEqual(copy.name, original.name + " Copy")
+        XCTAssertNotEqual(copy.id, original.id)
+        XCTAssertEqual(copy.columns, original.columns)
+        XCTAssertEqual(copy.marginX, original.marginX)
+        XCTAssertEqual(copy.themeId, original.themeId)
+        XCTAssertEqual(copy.background, original.background)
+    }
+
+    func testDuplicatingAThemeInsertsAnIdenticalLookRightAfterTheOriginal() {
+        let store = BoardThemeStore.shared
+        let original = store.create(name: "StoreFallbackTests-duplicate-source-theme")
+        store.duplicate(id: original.id)
+
+        guard let originalIndex = store.themes.firstIndex(where: { $0.id == original.id }) else {
+            return XCTFail("the original theme should still be present")
+        }
+        let copy = store.themes[originalIndex + 1]
+        XCTAssertEqual(copy.name, original.name + " Copy")
+        XCTAssertNotEqual(copy.id, original.id)
+        XCTAssertEqual(copy.spec, original.spec)
+    }
+
+    func testDuplicatingAnUnknownIdIsANoOp() {
+        let store = BoardPresetStore.shared
+        let countBefore = store.presets.count
+        store.duplicate(id: UUID())
+        XCTAssertEqual(store.presets.count, countBefore)
+    }
 }

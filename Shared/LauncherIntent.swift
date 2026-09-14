@@ -90,6 +90,16 @@ struct LauncherIntent: WidgetConfigurationIntent {
 
     /// Chosen shortcuts in order, capped at what any board can show.
     var slots: [SystemShortcut] {
-        Array((shortcuts ?? []).prefix(BoardGrid.maxSlots))
+        Self.capped(shortcuts, at: BoardGrid.maxSlots)
+    }
+
+    /// The capping logic `slots` uses, generalized over element type so
+    /// it's directly testable - `SystemShortcut` is an opaque, OS-populated
+    /// `AppEntity` with no public initializer third-party code can use
+    /// (same constraint as `WidgetKit.TimelineProviderContext` elsewhere in
+    /// this codebase), so this is tested with plain `[Int]`/`[String]`
+    /// instead. See WidgetLogicTests/LauncherIntentTests.swift.
+    static func capped<T>(_ items: [T]?, at limit: Int) -> [T] {
+        Array((items ?? []).prefix(limit))
     }
 }

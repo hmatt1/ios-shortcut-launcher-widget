@@ -97,14 +97,17 @@ struct PresetListView: View {
         }
     }
     
-    private func deletePreset(_ preset: BoardPreset) {
+    /// Not `private`: WidgetLogicTests/PresetListLogicTests.swift calls this
+    /// directly to verify the delete-reassigns-selection behavior without
+    /// driving the real List UI.
+    func deletePreset(_ preset: BoardPreset) {
         store.delete(id: preset.id)
         if selectedId == preset.id.uuidString {
             selectedId = store.presets.first?.id.uuidString ?? ""
         }
     }
-    
-    private func deleteItems(offsets: IndexSet) {
+
+    func deleteItems(offsets: IndexSet) {
         for index in offsets {
             let preset = store.presets[index]
                 deletePreset(preset)

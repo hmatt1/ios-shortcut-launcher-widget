@@ -44,6 +44,30 @@ struct SidePanel<PanelContent: View>: ViewModifier {
     private var width: CGFloat { containerWidth }
     private let spring = Animation.interactiveSpring(response: 0.32, dampingFraction: 0.86)
 
+    /// The pure decision behind the panel's drag-to-dismiss gesture below,
+    /// factored out so it's directly testable without a live gesture/view
+    /// hierarchy - see WidgetLogicTests/SidePanelLogicTests.swift. `nil`
+    /// means the drag is too vertical to count (the same horizontal-
+    /// dominance guard `onChanged` used inline before), so the caller
+    /// leaves `dragBack` exactly where it was.
+    static func draggedBack(translation: CGSize, edge: HorizontalEdge, width: CGFloat) -> CGFloat? {
+        let horizontal = translation.width
+        let vertical = translation.height
+        guard abs(horizontal) > abs(vertical) * 1.5 else { return nil }
+        let pull = edge == .leading ? -horizontal : horizontal
+        return max(0, min(width, pull))
+    }
+
+    enum ReleaseAction: Equatable { case close, snapBack }
+
+    /// Whether releasing the drag here should close the panel or snap it
+    /// back open, based on the 30%-of-width commit threshold.
+    static func releaseAction(translation: CGSize, edge: HorizontalEdge, width: CGFloat) -> ReleaseAction {
+        let horizontal = translation.width
+        let pull = edge == .leading ? -horizontal : horizontal
+        return pull > width * 0.3 ? .close : .snapBack
+    }
+
     func body(content: Content) -> some View {
         content
             .background {
@@ -81,11 +105,9 @@ struct SidePanel<PanelContent: View>: ViewModifier {
                             .simultaneousGesture(
                                 DragGesture(minimumDistance: 6)
                                     .onChanged { value in
-                                        let horizontal = value.translation.width
-                                        let vertical = value.translation.height
-                                        guard abs(horizontal) > abs(vertical) * 1.5 else { return }
-                                        let pull = edge == .leading ? -horizontal : horizontal
-                                        dragBack = max(0, min(width, pull))
+                                        if let newDragBack = Self.draggedBack(translation: value.translation, edge: edge, width: width) {
+                                            dragBack = newDragBack
+                                        }
                                     }
                                     .onEnded { value in
                                         // No direction guard here, unlike onChanged above:
@@ -93,11 +115,10 @@ struct SidePanel<PanelContent: View>: ViewModifier {
                                         // off 0, it must always be resolved (closed or
                                         // snapped back) on release, even if the gesture
                                         // happened to end on a more-vertical note.
-                                        let horizontal = value.translation.width
-                                        let pull = edge == .leading ? -horizontal : horizontal
-                                        if pull > width * 0.3 {
+                                        switch Self.releaseAction(translation: value.translation, edge: edge, width: width) {
+                                        case .close:
                                             close()
-                                        } else {
+                                        case .snapBack:
                                             withAnimation(spring) { dragBack = 0 }
                                         }
                                     }

@@ -8,18 +8,26 @@ struct CustomStepper<V: Strideable & Comparable>: View where V.Stride: SignedNum
     let range: ClosedRange<V>
     let step: V.Stride
     let stringValue: String
-    
+
+    /// Advances `value` by `step` and clamps it into `range`. Factored out
+    /// of the button actions below so it's directly testable without a live
+    /// view - see WidgetLogicTests/PresetEditorLogicTests.swift. Checking
+    /// both bounds (not just the one the original inline version checked
+    /// per direction) is a harmless generalization: from an in-range start,
+    /// advancing one way can never overshoot the opposite bound.
+    static func clamped(_ value: V, advancingBy step: V.Stride, range: ClosedRange<V>) -> V {
+        let newValue = value.advanced(by: step)
+        if newValue < range.lowerBound { return range.lowerBound }
+        if newValue > range.upperBound { return range.upperBound }
+        return newValue
+    }
+
     var body: some View {
         HStack {
             Text(title)
             Spacer()
             Button {
-                let newValue = value.advanced(by: -step)
-                if newValue >= range.lowerBound {
-                    value = newValue
-                } else {
-                    value = range.lowerBound
-                }
+                value = Self.clamped(value, advancingBy: -step, range: range)
             } label: {
                 Image(systemName: "minus")
                     .frame(width: 32, height: 32)
@@ -28,18 +36,13 @@ struct CustomStepper<V: Strideable & Comparable>: View where V.Stride: SignedNum
                     .foregroundColor(.primary)
             }
             .buttonStyle(.borderless)
-            
+
             Text(stringValue)
                 .font(.body.monospacedDigit())
                 .frame(minWidth: 36, alignment: .center)
-            
+
             Button {
-                let newValue = value.advanced(by: step)
-                if newValue <= range.upperBound {
-                    value = newValue
-                } else {
-                    value = range.upperBound
-                }
+                value = Self.clamped(value, advancingBy: step, range: range)
             } label: {
                 Image(systemName: "plus")
                     .frame(width: 32, height: 32)
@@ -387,22 +390,51 @@ struct PresetEditorView: View {
     /// `.gesture`) so it never steals a Form row's own tap or the board's
     /// keyboard-dismiss tap; the tight edge band means it essentially never
     /// sees a scroll drag either, since those start well inside the screen.
+    enum EdgeSwipeAction: Equatable {
+        case none, openPresets, openThemes
+    }
+
+    /// The pure decision behind `edgeSwipeGesture` below, factored out so
+    /// it's directly testable without a live gesture/view hierarchy - see
+    /// WidgetLogicTests/PresetEditorLogicTests.swift. `containerWidth` is
+    /// this view's own real width (see its property's own doc comment on
+    /// why that's not `UIScreen.main.bounds.width`), not a fixed screen size.
+    static func edgeSwipeAction(
+        startLocationX: CGFloat,
+        translation: CGSize,
+        containerWidth: CGFloat,
+        edgeBand: CGFloat = 32,
+        triggerDistance: CGFloat = 50
+    ) -> EdgeSwipeAction {
+        let horizontal = translation.width
+        let vertical = translation.height
+        guard abs(horizontal) > abs(vertical) * 1.5 else { return .none }
+
+        if startLocationX < edgeBand, horizontal > triggerDistance {
+            return .openPresets
+        } else if startLocationX > containerWidth - edgeBand, horizontal < -triggerDistance {
+            return .openThemes
+        }
+        return .none
+    }
+
     private var edgeSwipeGesture: some Gesture {
         DragGesture(minimumDistance: 10)
             .onChanged { value in
                 guard !edgeSwipeConsumed, !showingThemeList else { return }
-                let edgeBand: CGFloat = 32
-                let horizontal = value.translation.width
-                let vertical = value.translation.height
-                guard abs(horizontal) > abs(vertical) * 1.5 else { return }
-
-                let screenWidth = containerWidth
-                if value.startLocation.x < edgeBand, horizontal > 50 {
+                switch Self.edgeSwipeAction(
+                    startLocationX: value.startLocation.x,
+                    translation: value.translation,
+                    containerWidth: containerWidth
+                ) {
+                case .openPresets:
                     edgeSwipeConsumed = true
                     onShowPresets()
-                } else if value.startLocation.x > screenWidth - edgeBand, horizontal < -50 {
+                case .openThemes:
                     edgeSwipeConsumed = true
                     showingThemeList = true
+                case .none:
+                    break
                 }
             }
             .onEnded { _ in edgeSwipeConsumed = false }
@@ -416,8 +448,8 @@ struct PresetEditorView: View {
             WidgetCenter.shared.reloadAllTimelines()
         }
     }
-    
-    private var currentTemplateName: String {
+
+    var currentTemplateName: String {
         for template in DensityTemplate.all {
             if preset.marginX == template.layout.marginX &&
                preset.marginY == template.layout.marginY &&
@@ -433,7 +465,7 @@ struct PresetEditorView: View {
         return "Custom"
     }
 
-    private func applyTemplate(_ template: DensityTemplate) {
+    func applyTemplate(_ template: DensityTemplate) {
         preset.marginX = template.layout.marginX
         preset.marginY = template.layout.marginY
         preset.spacingX = template.layout.spacingX
