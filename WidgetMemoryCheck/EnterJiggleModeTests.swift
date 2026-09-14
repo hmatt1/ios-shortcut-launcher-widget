@@ -153,5 +153,55 @@ final class EnterJiggleModeTests: XCTestCase {
         afterSelectingWidget.lifetime = .keepAlways
         add(afterSelectingWidget)
         attachTree(named: "11-springboard-accessibility-tree-after-selecting-widget")
+
+        // 9. Confirmed by round 6: tapping the cell opened the widget's own
+        // configuration screen - title "Shortcut Launcher Widget", a
+        // 4-page family carousel (small/medium/large/XL, matching this
+        // widget's real supported families), a live preview, and a
+        // directly-tappable "Add Widget" button. Its accessibility label is
+        // " Add Widget" (a leading space, from the "+" glyph sharing the
+        // label) - matched with a CONTAINS predicate instead of an exact
+        // identifier so that leading space can't cause a silent mismatch.
+        // No swipe through the carousel: the default page (Small) is enough
+        // to get the extension process running for a memory reading, which
+        // is this whole check's actual goal - not exhaustively exercising
+        // every family size.
+        let addWidgetInSheet = springboard.buttons.element(
+            matching: NSPredicate(format: "label CONTAINS[c] 'Add Widget'")
+        )
+        let addWidgetInSheetExisted = addWidgetInSheet.waitForExistence(timeout: 3)
+        if addWidgetInSheetExisted {
+            addWidgetInSheet.tap()
+        }
+
+        let afterAddingWidget = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        afterAddingWidget.name = "12-after-tapping-add-widget-in-sheet"
+        afterAddingWidget.lifetime = .keepAlways
+        add(afterAddingWidget)
+        attachTree(named: "13-springboard-accessibility-tree-after-adding-widget")
+
+        // 10. Exit jiggle mode via the same "Done" button whose presence
+        // (instead of the expected "+") kicked off this whole phased
+        // investigation back in round 1 - confirming the loop closes.
+        let doneButton = springboard.buttons["Done"]
+        let doneButtonExisted = doneButton.waitForExistence(timeout: 3)
+        if doneButtonExisted {
+            doneButton.tap()
+        }
+
+        let addWidgetStatus = """
+        addWidgetInSheet existed: \(addWidgetInSheetExisted)
+        doneButton existed: \(doneButtonExisted)
+        """
+        let addWidgetStatusAttachment = XCTAttachment(data: Data(addWidgetStatus.utf8))
+        addWidgetStatusAttachment.name = "14-add-widget-and-done-status"
+        addWidgetStatusAttachment.lifetime = .keepAlways
+        add(addWidgetStatusAttachment)
+
+        let final = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        final.name = "15-final-home-screen"
+        final.lifetime = .keepAlways
+        add(final)
+        attachTree(named: "16-springboard-accessibility-tree-final")
     }
 }
