@@ -61,7 +61,7 @@ class FormatBytesTests(unittest.TestCase):
 class MainTests(unittest.TestCase):
     def test_returns_2_and_prints_usage_with_wrong_arg_count(self):
         self.assertEqual(print_footprint.main(["print-footprint.py"]), 2)
-        self.assertEqual(print_footprint.main(["print-footprint.py", "a", "b"]), 2)
+        self.assertEqual(print_footprint.main(["print-footprint.py", "a", "b", "c"]), 2)
 
     def test_returns_1_when_the_file_has_no_phys_footprint_key(self):
         import tempfile
@@ -86,6 +86,32 @@ class MainTests(unittest.TestCase):
             with os.fdopen(fd, "w") as f:
                 json.dump({"phys_footprint": 31_457_280}, f)
             self.assertEqual(print_footprint.main(["print-footprint.py", path]), 0)
+        finally:
+            os.remove(path)
+
+    def test_returns_0_when_under_the_given_threshold(self):
+        import tempfile
+        import json
+        import os
+
+        fd, path = tempfile.mkstemp(suffix=".json")
+        try:
+            with os.fdopen(fd, "w") as f:
+                json.dump({"phys_footprint": 15 * 1024 * 1024}, f)
+            self.assertEqual(print_footprint.main(["print-footprint.py", path, "50"]), 0)
+        finally:
+            os.remove(path)
+
+    def test_returns_1_when_over_the_given_threshold(self):
+        import tempfile
+        import json
+        import os
+
+        fd, path = tempfile.mkstemp(suffix=".json")
+        try:
+            with os.fdopen(fd, "w") as f:
+                json.dump({"phys_footprint": 100 * 1024 * 1024}, f)
+            self.assertEqual(print_footprint.main(["print-footprint.py", path, "50"]), 1)
         finally:
             os.remove(path)
 

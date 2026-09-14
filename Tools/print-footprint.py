@@ -12,6 +12,15 @@ The exact shape of footprint's JSON output wasn't confirmed by this
 project's own research before the first real CI run could produce a sample
 to check against - so this searches the whole parsed structure for a
 'phys_footprint' key at any depth, rather than assuming one fixed path.
+
+Usage:
+    print-footprint.py <footprint.json> [max_mb]
+
+With an optional `max_mb`, exits 1 (after still printing the reading) if
+phys_footprint exceeds it. Apple doesn't publish an official per-widget
+limit, so this isn't a precise cutoff - just a guard against a gross
+regression, set with real headroom above the current real baseline
+reading (see widget-memory-check.yml).
 """
 import json
 import sys
@@ -42,8 +51,8 @@ def format_bytes(n):
 
 
 def main(argv):
-    if len(argv) != 2:
-        print("usage: print-footprint.py <footprint.json>", file=sys.stderr)
+    if len(argv) not in (2, 3):
+        print("usage: print-footprint.py <footprint.json> [max_mb]", file=sys.stderr)
         return 2
 
     with open(argv[1], "r", encoding="utf-8") as f:
@@ -55,6 +64,17 @@ def main(argv):
         return 1
 
     print(f"phys_footprint: {phys_footprint} bytes ({format_bytes(phys_footprint)})")
+
+    if len(argv) == 3:
+        max_bytes = float(argv[2]) * 1024 * 1024
+        if phys_footprint > max_bytes:
+            print(
+                f"FAIL: phys_footprint ({format_bytes(phys_footprint)}) exceeds "
+                f"the {argv[2]} MB threshold.",
+                file=sys.stderr,
+            )
+            return 1
+
     return 0
 
 

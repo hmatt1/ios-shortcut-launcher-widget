@@ -88,7 +88,13 @@ jobs:
             fi
             if [ -f footprint.json ]; then
               cat footprint.json
-              python3 Tools/print-footprint.py footprint.json || true
+              # 50 MB: round 8's first real reading was ~14.5 MB - this
+              # leaves >3x headroom for legitimate growth while still
+              # catching a gross regression (e.g. a real leak). Not a
+              # precise cutoff - Apple doesn't publish an official
+              # per-widget limit - just a guard, tunable as more real
+              # readings come in.
+              python3 Tools/print-footprint.py footprint.json 50
             fi
           fi
 
