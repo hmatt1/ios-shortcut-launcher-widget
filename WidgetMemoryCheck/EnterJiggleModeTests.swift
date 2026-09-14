@@ -58,9 +58,28 @@ final class EnterJiggleModeTests: XCTestCase {
         // XCTAttachment(string:) - this form is unambiguously real and
         // documented, and a plain UTF-8 Data round-trips as readable text
         // in the extracted file either way.
-        let tree = XCTAttachment(data: Data(springboard.debugDescription.utf8))
-        tree.name = "02-springboard-accessibility-tree"
-        tree.lifetime = .keepAlways
-        add(tree)
+        func attachTree(named name: String) {
+            let tree = XCTAttachment(data: Data(springboard.debugDescription.utf8))
+            tree.name = name
+            tree.lifetime = .keepAlways
+            add(tree)
+        }
+        attachTree(named: "02-springboard-accessibility-tree")
+
+        // 6. The first real run confirmed jiggle mode does engage (every
+        // icon gets a delete badge) - but the top bar shows "Edit"/"Done"
+        // buttons, not the classic "+", suggesting iOS 26/27's redesigned
+        // Home Screen customization menu. Tap "Edit" and capture what it
+        // reveals, rather than guessing blindly past it.
+        let editButton = springboard.buttons["Edit"]
+        if editButton.waitForExistence(timeout: 3) {
+            editButton.tap()
+        }
+
+        let afterEdit = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        afterEdit.name = "03-after-tapping-edit"
+        afterEdit.lifetime = .keepAlways
+        add(afterEdit)
+        attachTree(named: "04-springboard-accessibility-tree-after-edit")
     }
 }
