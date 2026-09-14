@@ -101,16 +101,35 @@ final class EnterJiggleModeTests: XCTestCase {
         // a search field plus an alphabetical list of cells, one of which
         // is already "Shortcut Launcher Widget" (no search needed - few
         // enough apps are installed that it's visible without filtering).
-        // Tap it and capture whatever size-picker/preview screen follows.
+        // Round 4's screenshot after tapping it looked visually identical
+        // to round 3's (same gallery), which is ambiguous by itself - could
+        // mean the tap missed, or that this redesigned flow expands
+        // in-place rather than navigating. Logging the query's own state
+        // explicitly this round instead of inferring from another
+        // screenshot.
         let widgetCell = springboard.cells["Shortcut Launcher Widget"]
-        if widgetCell.waitForExistence(timeout: 3) {
+        let existedBeforeTap = widgetCell.waitForExistence(timeout: 3)
+        let hittableBeforeTap = widgetCell.isHittable
+        if existedBeforeTap {
             widgetCell.tap()
         }
+        let existsAfterTap = widgetCell.exists
+
+        let status = """
+        widgetCell existed before tap: \(existedBeforeTap)
+        widgetCell was hittable before tap: \(hittableBeforeTap)
+        widgetCell frame before tap: \(widgetCell.frame)
+        widgetCell still exists after tap (by the same query): \(existsAfterTap)
+        """
+        let statusAttachment = XCTAttachment(data: Data(status.utf8))
+        statusAttachment.name = "07-tap-status"
+        statusAttachment.lifetime = .keepAlways
+        add(statusAttachment)
 
         let afterSelectingWidget = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
-        afterSelectingWidget.name = "07-after-selecting-widget"
+        afterSelectingWidget.name = "08-after-selecting-widget"
         afterSelectingWidget.lifetime = .keepAlways
         add(afterSelectingWidget)
-        attachTree(named: "08-springboard-accessibility-tree-after-selecting-widget")
+        attachTree(named: "09-springboard-accessibility-tree-after-selecting-widget")
     }
 }
