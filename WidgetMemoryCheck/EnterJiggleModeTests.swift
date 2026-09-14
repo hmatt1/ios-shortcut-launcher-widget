@@ -128,9 +128,20 @@ final class EnterJiggleModeTests: XCTestCase {
         add(afterSearch)
         attachTree(named: "08-springboard-accessibility-tree-after-searching")
 
+        // .frame (like most XCUIElement properties) isn't a cached snapshot
+        // from waitForExistence/tap() - it live-queries the current UI tree
+        // whenever it's read. Round 9's real CI failure: capturing it AFTER
+        // the tap (inside this string, evaluated lazily at that point) raced
+        // against the tap's own navigation to the widget's config screen -
+        // a screen with no Cell elements at all - and the re-query threw
+        // instead of finding anything. It happened to race favorably in
+        // round 7's run, which is exactly the kind of flakiness a "worked
+        // once" result can hide. Every value below is now captured BEFORE
+        // the tap, while the cell's own screen is still on screen.
         let widgetCell = springboard.cells["Shortcut Launcher Widget"]
         let existedBeforeTap = widgetCell.waitForExistence(timeout: 3)
         let hittableBeforeTap = widgetCell.isHittable
+        let frameBeforeTap = widgetCell.frame
         if existedBeforeTap {
             widgetCell.tap()
         }
@@ -140,7 +151,7 @@ final class EnterJiggleModeTests: XCTestCase {
         searchField existed: \(searchFieldExisted)
         widgetCell existed before tap: \(existedBeforeTap)
         widgetCell was hittable before tap: \(hittableBeforeTap)
-        widgetCell frame before tap: \(widgetCell.frame)
+        widgetCell frame before tap: \(frameBeforeTap)
         widgetCell still exists after tap (by the same query): \(existsAfterTap)
         """
         let statusAttachment = XCTAttachment(data: Data(status.utf8))
