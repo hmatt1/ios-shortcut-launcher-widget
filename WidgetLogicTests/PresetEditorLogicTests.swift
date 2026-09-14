@@ -2,10 +2,11 @@ import XCTest
 @testable import LauncherBoard
 
 /// `CustomStepper.clamped(_:advancingBy:range:)` and
-/// `PresetEditorView.edgeSwipeAction(...)`/`.applyTemplate`/
-/// `.currentTemplateName` (App/PresetEditor.swift) - all previously
-/// `private`-scoped logic inline inside SwiftUI closures, extracted so
-/// they're directly testable without driving the real UI.
+/// `PresetEditorView.edgeSwipeAction(...)`/`.currentTemplateName`
+/// (App/PresetEditor.swift) - all previously `private`-scoped logic inline
+/// inside SwiftUI closures, extracted so they're directly testable without
+/// driving the real UI. `applyTemplate` is not covered here - see the
+/// comment above `testCurrentTemplateNameMatchesEveryDensityTemplateViaARealPreset`.
 @MainActor
 final class PresetEditorLogicTests: XCTestCase {
     // MARK: - CustomStepper.clamped
@@ -87,12 +88,42 @@ final class PresetEditorLogicTests: XCTestCase {
         XCTAssertEqual(sameStartInAWiderWindow, .none, "390 is nowhere near the right edge of a 1200pt-wide window")
     }
 
-    // MARK: - applyTemplate / currentTemplateName
+    // MARK: - currentTemplateName
 
-    func testApplyTemplateThenCurrentTemplateNameRoundTripsForEveryTemplate() {
-        let view = PresetEditorView(presetId: UUID())
+    // Not tested here, and not an oversight: a real CI run proved that
+    // mutating a `@State` property (`preset`) via a method called directly
+    // on a manually-constructed `PresetEditorView` - bypassing SwiftUI's own
+    // render cycle entirely - does not reliably persist to a later property
+    // read on that same instance (`applyTemplate` then `currentTemplateName`
+    // always saw the ORIGINAL preset, for every template, in the actual CI
+    // run this was first tried in). `@State`'s storage evidently isn't
+    // guaranteed live outside SwiftUI's real view graph, whatever the
+    // in-process appearance suggested. `currentTemplateName`'s matching
+    // logic is still fully covered below, through the one construction path
+    // that DID prove reliable - reading a `@State` value assigned at
+    // `init` time, never mutated afterward - which is exactly how
+    // `testCurrentTemplateNameReturnsCustomForANonTemplateMatchingPreset`
+    // already worked (and passed) even before this was discovered.
+    // `applyTemplate` itself (a direct, unconditional field-by-field
+    // assignment with no branching to get wrong) is left unverified by an
+    // automated test for this same reason.
+    func testCurrentTemplateNameMatchesEveryDensityTemplateViaARealPreset() {
+        let store = BoardPresetStore.shared
         for template in DensityTemplate.all {
-            view.applyTemplate(template)
+            let created = store.create(name: "PresetEditorLogicTests-\(template.id)")
+            var withTemplateLook = created
+            withTemplateLook.marginX = template.layout.marginX
+            withTemplateLook.marginY = template.layout.marginY
+            withTemplateLook.spacingX = template.layout.spacingX
+            withTemplateLook.spacingY = template.layout.spacingY
+            withTemplateLook.paddingX = template.layout.paddingX
+            withTemplateLook.paddingY = template.layout.paddingY
+            withTemplateLook.cornerRadius = template.layout.cornerRadius
+            withTemplateLook.outerCornerRadius = template.layout.outerCornerRadius
+            store.update(withTemplateLook)
+            defer { store.delete(id: created.id) }
+
+            let view = PresetEditorView(presetId: created.id)
             XCTAssertEqual(view.currentTemplateName, template.name)
         }
     }
