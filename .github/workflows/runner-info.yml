@@ -1,0 +1,37 @@
+name: Runner Info
+
+# Manual only. Prints exactly what's installed on the xcode-27 runner label
+# right now - Xcode build number, Swift version, and every installed
+# Simulator runtime. `xcode-27` is a GitHub-hosted runner (confirmed via the
+# Actions API: runner_group_name "GitHub Actions", an auto-generated
+# "GitHub Actions <id>" runner name - not a self-hosted machine this repo
+# controls), so its actual Xcode installation - beta/RC vs GM - is entirely
+# GitHub's own infrastructure to update, on their own rollout schedule
+# after Apple ships a new Xcode. This workflow exists to check that
+# directly instead of guessing from the label name alone, and to re-check
+# later if it's ever in question again (e.g. issue #1, "Rebuild with GM
+# Xcode 27 once it ships").
+on:
+  workflow_dispatch:
+
+jobs:
+  info:
+    name: Print Installed Xcode/Simulator Versions
+    runs-on: xcode-27
+    steps:
+      - name: Show Xcode, Swift, and Simulator Runtime Versions
+        run: |
+          echo "== xcodebuild -version =="
+          xcodebuild -version
+
+          echo
+          echo "== xcode-select -p =="
+          xcode-select -p
+
+          echo
+          echo "== swift --version =="
+          swift --version
+
+          echo
+          echo "== xcrun simctl list runtimes =="
+          xcrun simctl list runtimes
