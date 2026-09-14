@@ -1,0 +1,81 @@
+name: Widget Memory Check (Phase A - Diagnostics)
+
+# Manual only. Phase A of a real .appex memory-footprint check: gets the
+# actual widget extension running by placing it on a Simulator Home Screen,
+# which needs SpringBoard automation this project has zero prior grounding
+# in (doubly so on iOS 27). This run's whole job is producing real
+# diagnostics (a screenshot + SpringBoard's accessibility tree) to write
+# the rest of that automation from - see
+# WidgetMemoryCheck/EnterJiggleModeTests.swift's header comment and the
+# plan this was built from. Deliberately does NOT fail the workflow based
+# on whether jiggle mode visibly engaged - the test itself has no
+# assertions - so the diagnostics always come out for a human to read.
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnose:
+    name: Enter Jiggle Mode and Capture Diagnostics
+    runs-on: xcode-27
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: brew install xcodegen
+
+      - name: Generate Xcode Project
+        run: xcodegen generate
+
+      - name: Boot Simulator
+        run: |
+          # Only need one iPhone-class Simulator for this diagnostic pass -
+          # reuses Tools/resolve-simulator.py exactly as screenshots.yml
+          # does, ignoring the IPAD_TYPE it also resolves.
+          RESOLVED=$(python3 Tools/resolve-simulator.py)
+          echo "$RESOLVED" >> "$GITHUB_ENV"
+          eval "$RESOLVED"
+
+          IPHONE_UDID=$(xcrun simctl create "MemoryCheck-iPhone" "$IPHONE_TYPE" "$RUNTIME")
+          xcrun simctl boot "$IPHONE_UDID"
+          echo "IPHONE_UDID=$IPHONE_UDID" >> "$GITHUB_ENV"
+
+      - name: Run Jiggle Mode Test
+        run: |
+          xcodebuild test \
+            -project LauncherBoard.xcodeproj \
+            -scheme LauncherBoard \
+            -destination "platform=iOS Simulator,id=$IPHONE_UDID" \
+            -resultBundlePath jiggle.xcresult \
+            -only-testing:WidgetMemoryCheckUITests
+
+      - name: Extract Diagnostics
+        if: always()
+        run: |
+          # if: always() - these diagnostics are the whole point of this
+          # workflow; a failure elsewhere shouldn't hide whatever was
+          # actually captured before it.
+          if [ -d jiggle.xcresult ]; then
+            xcrun xcresulttool export attachments --path jiggle.xcresult --output-path jiggle-export
+            python3 Tools/organize-screenshots.py jiggle-export diagnostics
+            zip -r diagnostics.zip diagnostics
+          else
+            echo "No result bundle was produced - nothing to extract."
+          fi
+
+      - name: Upload Diagnostics Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jiggle-mode-diagnostics
+          path: diagnostics.zip
+          if-no-files-found: warn
+
+      - name: Shutdown and Remove Simulator
+        if: always()
+        run: |
+          if [ -n "$IPHONE_UDID" ]; then
+            xcrun simctl shutdown "$IPHONE_UDID" || true
+            xcrun simctl delete "$IPHONE_UDID" || true
+          fi

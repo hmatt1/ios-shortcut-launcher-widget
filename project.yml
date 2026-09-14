@@ -90,6 +90,7 @@ targets:
       testTargets:
         - WidgetScreenshotsUITests
         - WidgetLogicTests
+        - WidgetMemoryCheckUITests
 
   LauncherBoardWidget:
     type: app-extension
@@ -178,6 +179,27 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.hmatt1.shortcutlauncherwidget.LogicTests
+        DEVELOPMENT_TEAM: FHMS65N3XS
+        CODE_SIGN_STYLE: Automatic
+        SWIFT_VERSION: "5.0"
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: LauncherBoard
+
+  # Phase A of a real .appex memory-footprint check (see
+  # .github/workflows/widget-memory-check.yml): SpringBoard automation this
+  # project has no prior grounding in, on iOS 27 specifically. Stops at
+  # entering jiggle mode and dumping diagnostics rather than guessing past
+  # it - see WidgetMemoryCheck/EnterJiggleModeTests.swift's own header
+  # comment. Simulator-only, same as WidgetScreenshotsUITests above.
+  WidgetMemoryCheckUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "27.0"
+    sources: [WidgetMemoryCheck]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.hmatt1.shortcutlauncherwidget.MemoryCheckUITests
         DEVELOPMENT_TEAM: FHMS65N3XS
         CODE_SIGN_STYLE: Automatic
         SWIFT_VERSION: "5.0"
