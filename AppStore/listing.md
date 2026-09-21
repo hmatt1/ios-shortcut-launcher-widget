@@ -23,11 +23,17 @@ say something different from what's on the Home Screen.
 ## Description (≤4000 chars)
 
     Shortcut Launcher Widget turns your Home Screen into a highly customizable
-    launchpad for the Shortcuts you already have.
+    launchpad for the Shortcuts you already have. There are no other apps on
+    the App Store that offer this kind of layout precision and customization.
 
-    Pick up to 64 shortcuts and they become a beautiful grid of named tiles.
-    Tap one and it runs right there in place. Nothing opens. This app is all
-    about letting you build the exact widget you want.
+    Powered by the new iOS 27 APIs, tapping a tile runs your shortcut
+    completely in place without any screen flicker or app bouncing. 
+    
+    Because you have total control over the layout, you can break past the
+    usual limits. Want to easily fit 3, 4, or even 5 shortcuts on a small
+    widget? You can dial in the perfect grid. Pick up to 64 shortcuts and they
+    become a beautiful grid of named tiles. This app is all about letting you
+    build the exact widget you want.
 
     • Four widget sizes, including the new Extra Large full-page widget
     • 10 built-in color themes, or build your own custom look
