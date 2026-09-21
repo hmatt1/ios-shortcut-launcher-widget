@@ -1,0 +1,27 @@
+name: Update App Store Listing
+
+on:
+  workflow_dispatch:
+
+jobs:
+  update-listing:
+    name: Update App Store Listing
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: pip install pyjwt cryptography
+
+      - name: Push listing to App Store Connect
+        env:
+          ASC_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+          ASC_KEY_ID: ${{ secrets.ADMIN_APPSTORE_KEY_ID }}
+          ASC_PRIVATE_KEY_PATH: ./AuthKey.p8
+          P8_KEY: ${{ secrets.ADMIN_APPSTORE_P8_KEY }}
+        run: |
+          echo "$P8_KEY" > ./AuthKey.p8
+          python3 Tools/app-store-connect.py --apply
+          rm ./AuthKey.p8
