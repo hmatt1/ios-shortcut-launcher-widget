@@ -73,7 +73,15 @@ Because you have total control over the layout, you can break past the usual lim
 No accounts. No network access. No analytics. No ads. Nothing to buy. It's a Home Screen tool, not a service."""
 KEYWORDS = "shortcuts,widget,launcher,home screen,automation,productivity,theme,icons,appintents"
 SUPPORT_URL = "https://hmatt1.github.io/ios-shortcut-launcher-widget/support/"
-MARKETING_URL = None  # left blank, per AppStore/listing.md
+MARKETING_URL = "https://github.com/hmatt1/ios-shortcut-launcher-widget"
+COPYRIGHT = "2026 Matt"
+REVIEW_NOTES = """Shortcut Launcher Widget is a Home Screen widget configurator. Each tile on the widget is a button built with iOS 27's RunSystemShortcutIntent — tapping it runs one of the person's own Shortcuts in place, via the system's own widget-button API; the app itself never sees what that shortcut does.
+
+The app (this target) is the configuration surface: pick a density, theme, background, and column layout, then choose which of the person's Shortcuts appear on the widget via Edit Widget on the Home Screen.
+
+Because the board's content depends on Shortcuts already existing on the test device, a stock/empty Shortcuts library will show an empty-state message ("Edit Widget") rather than a populated board. Apple's own Shortcuts app ships with a handful of default shortcuts, so even a fresh device has something to select — but for the fullest picture, creating 3-6 shortcuts first (e.g. from the Shortcuts app's own gallery) before testing the widget will show the intended experience.
+
+No accounts, no network access, no analytics, no ads, no in-app purchases."""
 
 # A clean 4+ profile: every content descriptor "none", every capability
 # false/off. See issue #5 and AgeRatingDeclaration.Attributes research.
@@ -233,6 +241,27 @@ def set_age_rating(app_info_id):
           "set age rating")
 
 
+def set_version_details(version_id):
+    write("PATCH", f"/appStoreVersions/{version_id}",
+          {"data": {"type": "appStoreVersions", "id": version_id, "attributes": {"copyright": COPYRIGHT}}},
+          "update version copyright")
+
+
+def set_review_details(version_id):
+    result = api("GET", f"/appStoreVersions/{version_id}/appStoreReviewDetail")
+    existing = result.get("data")
+    attrs = {"notes": REVIEW_NOTES}
+    if existing:
+        write("PATCH", f"/appStoreReviewDetails/{existing['id']}",
+              {"data": {"type": "appStoreReviewDetails", "id": existing["id"], "attributes": attrs}},
+              "update review notes")
+    else:
+        write("POST", "/appStoreReviewDetails",
+              {"data": {"type": "appStoreReviewDetails", "attributes": attrs,
+                        "relationships": {"appStoreVersion": {"data": {"type": "appStoreVersions", "id": version_id}}}}},
+              "create review notes")
+
+
 def main():
     missing = [v for v in ("ASC_KEY_ID", "ASC_ISSUER_ID", "ASC_PRIVATE_KEY_PATH") if v not in os.environ]
     if missing:
@@ -254,6 +283,8 @@ def main():
     version_id, version_string = find_editable_version(app_id)
     print(f"Version: {version_string} -> id {version_id}\n")
     set_version_metadata(version_id)
+    set_version_details(version_id)
+    set_review_details(version_id)
 
 
 if __name__ == "__main__":
