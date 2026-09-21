@@ -259,7 +259,7 @@ def set_review_details(version_id):
         "contactFirstName": "Matt",
         "contactLastName": "Developer",
         "contactEmail": "support@example.com",
-        "contactPhone": "+1 5555555555"
+        "contactPhone": "+1 555 555 5555"
     }
     
     if existing:
