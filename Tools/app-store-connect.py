@@ -54,18 +54,17 @@ NAME = "Shortcut Launcher Widget"
 SUBTITLE = "Run your Shortcuts, tap once"
 PRIVACY_POLICY_URL = "https://hmatt1.github.io/ios-shortcut-launcher-widget/"
 PROMOTIONAL_TEXT = (
-    "New: the Extra Large widget fills a whole Home Screen page. Ten "
-    "themes, five densities, your own columns — all running the "
-    "Shortcuts you already built."
+    "Customize your Home Screen with a widget designed specifically for "
+    "running your Shortcuts. Choose from multiple themes and precise layouts."
 )
-DESCRIPTION = """Shortcut Launcher Widget turns your Home Screen into a typographic launchpad for the Shortcuts you already have.
+DESCRIPTION = """Shortcut Launcher Widget turns your Home Screen into a highly customizable launchpad for the Shortcuts you already have.
 
-Pick the shortcuts you want — up to 64 — and they become a grid of named tiles. Tap one and it runs right there, in place. Nothing opens.
+Pick up to 64 shortcuts and they become a beautiful grid of named tiles. Tap one and it runs right there in place. Nothing opens. This app is all about letting you build the exact widget you want.
 
 • Four widget sizes, including the new Extra Large full-page widget
-• 10 built-in color themes, or build your own
+• 10 built-in color themes, or build your own custom look
 • Five density presets from edge-to-edge to roomy, or dial in exact margins, spacing, and corner radius yourself
-• Explicit column control — auto-fit, or pin 1, 2, 3, or more
+• Explicit column control: auto-fit, or pin 1, 2, 3, or more
 • Three backgrounds: a solid theme color, the system's own material, or your own wallpaper blended in behind the widget
 • Save multiple board presets and switch between them instantly
 
