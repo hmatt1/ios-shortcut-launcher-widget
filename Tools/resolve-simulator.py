@@ -45,6 +45,14 @@ def newest(candidates, key):
 # see Tools/test_resolve_simulator.py.
 
 def find_iphone_pro_max(devicetypes):
+    # App Store explicitly requires 1284x2778 or 1242x2688 for the large iPhone size.
+    # Newer Pro Max models (14/15/16/17) have different dimensions due to the Dynamic Island.
+    # We lock this to the iPhone 13 Pro Max to guarantee exactly 1284x2778px.
+    for t in devicetypes:
+        if t["name"] == "iPhone 13 Pro Max":
+            return t
+    
+    # Fallback to the newest Pro Max if 13 Pro Max is somehow missing
     return newest(
         [t for t in devicetypes if "iPhone" in t["name"] and "Pro Max" in t["name"]],
         key=lambda t: t["identifier"],
