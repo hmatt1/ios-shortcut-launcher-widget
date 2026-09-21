@@ -250,7 +250,10 @@ def set_version_details(version_id):
 def set_review_details(version_id):
     result = api("GET", f"/appStoreVersions/{version_id}/appStoreReviewDetail")
     existing = result.get("data")
-    attrs = {"notes": REVIEW_NOTES}
+    attrs = {
+        "notes": REVIEW_NOTES,
+        "demoAccountRequired": False
+    }
     if existing:
         write("PATCH", f"/appStoreReviewDetails/{existing['id']}",
               {"data": {"type": "appStoreReviewDetails", "id": existing["id"], "attributes": attrs}},
