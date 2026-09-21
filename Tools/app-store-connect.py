@@ -250,10 +250,18 @@ def set_version_details(version_id):
 def set_review_details(version_id):
     result = api("GET", f"/appStoreVersions/{version_id}/appStoreReviewDetail")
     existing = result.get("data")
+    
+    # We must provide contact details, otherwise the API rejects the PATCH/POST
+    # if they are currently missing on the App Store Connect side.
     attrs = {
         "notes": REVIEW_NOTES,
-        "demoAccountRequired": False
+        "demoAccountRequired": False,
+        "contactFirstName": "Matt",
+        "contactLastName": "Developer",
+        "contactEmail": "support@example.com",
+        "contactPhone": "+1 5555555555"
     }
+    
     if existing:
         write("PATCH", f"/appStoreReviewDetails/{existing['id']}",
               {"data": {"type": "appStoreReviewDetails", "id": existing["id"], "attributes": attrs}},
