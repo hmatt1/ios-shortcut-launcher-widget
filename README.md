@@ -1,3 +1,22 @@
+
+> First thing: it's free, no ads, open source, no data collected, vibe coded.
+> 
+> Most importantly
+> 
+> IT DOESNT FLICKER TO THE HOST APP WHEN YOU RUN A SHORTCUT!!! LETS GOOO!
+> 
+> It's built with the new ios27 "runsystemshortcutintent" which lets widgets directly run shortcuts when you press a button in the widget.
+> 
+> Basically, I threw together this app as fast as humanly possible to solve my problem of trying to fit more shortcuts on the home screen. I tried to make it very customizable which also makes it kinda hard to use. You'll probably have to play around a bit to figure it out. The app is for configuring the colors/spacing, and then you just add a widget as normal, and configure it to pick which shortcuts to display.
+> 
+> I just wanted to share the app here ASAP because I know a few others said they were interested and I'm pretty sure this is the first app to be able to make shortcut widgets like this, like you can even do 3 or more shortcuts in a "small" sized widget.
+>
+> NOTE: Don't bother reading anything in the app description, it's all AI slop and I have no idea what it says. In fact, the whole app is vibe coded slop but it works good enough for me :)
+> 
+> LINK: https://apps.apple.com/us/app/shortcut-launcher-widget/id6809640535
+> 
+> If you want to contribute, I'm happy to accept PRs as long as it doesn't break things.
+
 # Launcher Board
 
 Shortcuts on your Home Screen. Every tile runs a shortcut in place through the system `RunSystemShortcutIntent`, so nothing opens.
