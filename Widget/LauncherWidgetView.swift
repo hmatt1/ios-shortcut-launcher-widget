@@ -3,15 +3,18 @@ import AppIntents
 import SwiftUI
 import WidgetKit
 
-/// This file, `Shared/LauncherIntent.swift`, and everything they reference
-/// live in `Shared/` rather than `Widget/` specifically so `WidgetLogicTests`
-/// can reach them: a host-less XCTest unit-test target can link against a
-/// real `.application` target (the standard, documented pattern), but not
-/// against an `.app-extension` target like `LauncherBoardWidget` - its
-/// compiled `.appex` isn't a linkable library the way a framework or app is,
-/// confirmed by a real CI linker failure ("Undefined symbols... Ld ... normal
-/// (in target 'WidgetLogicTests')") rather than assumed. `Widget/Widget.swift`
-/// now holds only the `@main` widget-bundle registration itself.
+#if canImport(LauncherBoard)
+// Only true when this file is compiled into WidgetLogicTests, which reaches
+// Shared/ through its host app module. In the widget extension, Shared/ is
+// compiled in directly, so there is no such module and this is a no-op.
+@testable import LauncherBoard
+#endif
+
+/// This file and `Widget/LauncherIntent.swift` must stay in `Widget/` and out
+/// of `Shared/`: `Shared/` is also compiled into the app, and a second copy of
+/// the widget's App Intents in the app binary breaks tap handling. See
+/// `project.yml` (WidgetLogicTests) for how the tests compile these files
+/// directly, and the "App Intents guard" step in `.github/workflows/build.yml`.
 struct LauncherEntry: TimelineEntry {
     let date: Date
     let configuration: LauncherIntent

@@ -73,11 +73,6 @@ targets:
         embed: true
       - sdk: SwiftUI.framework
       - sdk: WidgetKit.framework
-      # Needed since Shared/LauncherIntent.swift and
-      # Shared/LauncherWidgetView.swift (compiled into this target too -
-      # see their header comments) import AppIntents, not because the app
-      # itself uses App Intents directly.
-      - sdk: AppIntents.framework
     # Attaches WidgetScreenshotsUITests to this target's own auto-generated
     # scheme's Test action, via XcodeGen's per-target `scheme.testTargets`
     # convenience - the only thing it changes is adding a Test action entry,
@@ -156,26 +151,25 @@ targets:
   # WidgetFamily -> BoardSize mapping that caused the XL widget crash. Runs
   # on every push via .github/workflows/build.yml (unlike the two Simulator-
   # UI-driving targets above, which are slow and either manual or on-demand).
-  # No sources of its own beyond the test files themselves.
-  #
-  # Depends on LauncherBoard (the app target), NOT LauncherBoardWidget - a
-  # first attempt at depending directly on the extension target compiled and
-  # type-checked fine but failed at LINK time on real CI ("Undefined
-  # symbols... Ld .../WidgetLogicTests ... (in target 'WidgetLogicTests')"):
-  # an app-extension's compiled .appex isn't a linkable library the way an
-  # .application is, so a host-less unit-test target can't pull symbols out
-  # of one. That's exactly why LauncherEntry/LauncherProvider/
-  # BoardSize(family:)/LauncherWidgetView and LauncherIntent live in Shared/
-  # now instead of Widget/ (see Shared/LauncherWidgetView.swift's header
-  # comment) - LauncherBoard's sources already include Shared/, so
-  # `@testable import LauncherBoard` reaches all of it, and .application is
-  # the standard, fully-supported host type for a hostless XCTest target.
-  # Widget/Widget.swift keeps only its @main registration.
+  # Shared/ reaches the tests through `@testable import LauncherBoard` (the
+  # app target is the standard, linkable host for a host-less XCTest bundle;
+  # an app extension's .appex is not - a direct dependency on it failed at
+  # LINK time). The widget layer (Widget/LauncherIntent.swift,
+  # Widget/LauncherWidgetView.swift) is compiled straight into this test
+  # bundle instead, minus Widget.swift's @main. It must NOT live in Shared/:
+  # Shared/ is compiled into the app too, and a duplicate copy of the
+  # widget's App Intents in the app binary breaks widget taps.
   WidgetLogicTests:
     type: bundle.unit-test
     platform: iOS
     deploymentTarget: "27.0"
-    sources: [WidgetLogicTests]
+    sources:
+      - WidgetLogicTests
+      - path: Widget
+        excludes:
+          - Widget.swift
+          - Info.plist
+          - "*.entitlements"
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.hmatt1.shortcutlauncherwidget.LogicTests

@@ -1,6 +1,11 @@
 import Foundation
 import AppIntents
 
+#if canImport(LauncherBoard)
+// See the note in Widget/LauncherWidgetView.swift.
+@testable import LauncherBoard
+#endif
+
 
 
 extension WidgetPosition: AppEnum {

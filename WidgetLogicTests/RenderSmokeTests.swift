@@ -14,7 +14,7 @@ import WidgetKit
 ///
 /// Uses `LauncherWidgetView`'s `familyOverride`/`renderingModeOverride`/
 /// `showsContainerBackgroundOverride` init parameters
-/// (Shared/LauncherWidgetView.swift), not `.environment(\.widgetFamily, ...)`
+/// (Widget/LauncherWidgetView.swift), not `.environment(\.widgetFamily, ...)`
 /// directly: WidgetKit's `widgetFamily`/`widgetRenderingMode`/
 /// `showsWidgetContainerBackground` environment keys are read-only outside
 /// WidgetKit's own runtime (confirmed against a real CI compile error -

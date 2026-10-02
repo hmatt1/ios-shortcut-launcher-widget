@@ -158,6 +158,26 @@ jobs:
             MARKETING_VERSION="$VERSION" \
             CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER"
 
+          # 2b. App Intents guard. The widget's intents (LauncherIntent,
+          # RunSystemShortcutIntent usage) must exist in exactly one binary:
+          # the widget extension. A copy in the app binary breaks widget
+          # taps. Shared/ is compiled into both, so nothing intent-related
+          # may live there (see Widget/LauncherWidgetView.swift).
+          APP_DIR=$(echo LauncherBoard.xcarchive/Products/Applications/*.app)
+          APPEX_DIR=$(echo "$APP_DIR"/PlugIns/*.appex)
+          echo "App bundle: $APP_DIR"
+          echo "Extension bundle: $APPEX_DIR"
+          echo "--- app Metadata.appintents:"; find "$APP_DIR" -maxdepth 2 -path '*Metadata.appintents*' | head -20
+          echo "--- extension Metadata.appintents:"; find "$APPEX_DIR" -maxdepth 2 -path '*Metadata.appintents*' | head -20
+          if grep -rl "LauncherIntent" "$APP_DIR"/Metadata.appintents 2>/dev/null; then
+            echo "ERROR: the app bundle contains LauncherIntent App Intents metadata."
+            exit 1
+          fi
+          if ! grep -rl "LauncherIntent" "$APPEX_DIR"/Metadata.appintents 2>/dev/null; then
+            echo "ERROR: the widget extension is missing LauncherIntent App Intents metadata."
+            exit 1
+          fi
+
           # 3. Create ExportOptions.plist - manual signing, pointing at the
           # exact same fixed certificate and profiles as project.yml.
           cat <<EOF > exportOptions.plist

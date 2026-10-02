@@ -2,7 +2,7 @@ import XCTest
 @testable import LauncherBoard
 
 /// `LauncherIntent.capped(_:at:)` - the generic the real `slots` property
-/// calls (see Shared/LauncherIntent.swift for why it's generic rather than
+/// calls (see Widget/LauncherIntent.swift for why it's generic rather than
 /// tested with a real `[SystemShortcut]`).
 final class LauncherIntentTests: XCTestCase {
     func testNilInputReturnsEmptyArray() {
