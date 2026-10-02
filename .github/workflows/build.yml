@@ -148,6 +148,7 @@ jobs:
             VERSION="${LATEST%.*}.$(( ${LATEST##*.} + 1 ))"
           fi
           echo "Building version $VERSION (build $GITHUB_RUN_NUMBER)"
+          echo "RELEASE_VERSION=$VERSION" >> "$GITHUB_ENV"
 
           # 1. Setup App Store Connect API Key for altool (and fix Windows line endings!)
           mkdir -p ~/.appstoreconnect/private_keys/
@@ -269,7 +270,7 @@ jobs:
         with:
           tag_name: build-${{ github.run_number }}
           target_commitish: ${{ github.sha }}
-          name: "Build ${{ github.run_number }}"
+          name: "v${{ env.RELEASE_VERSION }} (build ${{ github.run_number }})"
           prerelease: false
           make_latest: true
           files: export/LauncherBoard.ipa
