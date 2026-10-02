@@ -217,6 +217,14 @@ jobs:
           # 5. Upload to TestFlight - this is the one step that still
           # needs the App Store Connect API key, purely to authenticate
           # the upload itself.
+          # Only tag pushes (v*) carry a real version number. Untagged
+          # pushes would upload as 0.0.0, which App Store Connect rejects
+          # once a 0.0.0 build was already approved (error 90062), so they
+          # stop after the archive/export (the IPA is kept as an artifact).
+          if [[ "$GITHUB_REF" != refs/tags/* ]]; then
+            echo "Not a tag push: skipping TestFlight upload (version would be 0.0.0)."
+            exit 0
+          fi
           xcrun altool --upload-app \
             -f export/LauncherBoard.ipa \
             -t ios \
