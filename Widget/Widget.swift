@@ -7,9 +7,6 @@ import AppIntents
 /// the app also compiles - a second copy of the intents in the app binary
 /// breaks widget taps). `WidgetLogicTests` compiles every file in `Widget/`
 /// except this one, since `@main` must exist in exactly one target.
-@main` has to stay exactly here, though: it's this target's one true
-/// entry point, and a second target compiling this same file would collide
-/// with it.
 @main
 struct LauncherBoardWidget: Widget {
     var body: some WidgetConfiguration {

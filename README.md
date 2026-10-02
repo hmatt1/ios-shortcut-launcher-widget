@@ -115,15 +115,15 @@ Shared/Layout.swift            BackgroundStyle and WidgetPosition enums
 Shared/WidgetBackground.swift  background resolver, wallpaper-slice view
 Shared/WidgetGeometry.swift    per-device widget grid; maps a slot to a wallpaper rectangle
 Shared/WallpaperStore.swift    normalises the screenshot and pre-renders one slice per slot
-Shared/LauncherIntent.swift    widget configuration intent, AppEnum/AppEntity conformances
-Shared/LauncherWidgetView.swift  timeline entry, provider, BoardSize(family:), the widget's own view
 App/App.swift                  app entry point; loads the last-edited preset
 App/PresetEditor.swift         layout/theme/background editor and live preview
 App/PresetList.swift           preset picker, reorder, duplicate, restore defaults
 App/ThemeList.swift            theme picker, reorder, duplicate, restore defaults
 App/SidePanel.swift            slide-in-from-the-edge presentation used by both list views
 App/Assets.xcassets            app icon and accent color
-Widget/Widget.swift            just the @main widget-bundle registration - see Shared/LauncherWidgetView.swift
+Widget/Widget.swift            just the @main widget-bundle registration
+Widget/LauncherIntent.swift    widget configuration intent, AppEnum/AppEntity conformances
+Widget/LauncherWidgetView.swift  timeline entry, provider, BoardSize(family:), the widget's own view
 WidgetLogicTests/                exhaustive XCTest coverage of BoardGrid/theme/widget logic - see below
 WidgetScreenshots/               XCUITest target that captures App Store screenshots - see below
 WidgetMemoryCheck/               XCUITest that places the real widget via SpringBoard automation - see below
