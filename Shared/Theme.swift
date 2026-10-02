@@ -53,14 +53,27 @@ public struct ThemeSpec: Sendable, Codable, Equatable {
         accents = try container.decode([RGB].self, forKey: .accents)
         background = try container.decode([RGB].self, forKey: .background)
         // Lenient: a missing or corrupted labels array must never throw here,
-        // or one bad theme drops the whole store.
-        labels = (try? container.decode([RGB].self, forKey: .labels)) ?? Array(repeating: RGB(0xFFFFFF), count: 12)
+        // or one bad theme drops the whole store. The stored key is "label"
+        // (what every shipped build wrote); "labels" is also accepted because
+        // some interim builds wrote that instead.
+        labels = (try? container.decode([RGB].self, forKey: .labels))
+            ?? (try? container.decode([RGB].self, forKey: .labelsInterim))
+            ?? (try? container.decode(RGB.self, forKey: .labels)).map { Array(repeating: $0, count: 12) }
+            ?? Array(repeating: RGB(0xFFFFFF), count: 12)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(accents, forKey: .accents)
+        try container.encode(background, forKey: .background)
+        try container.encode(labels, forKey: .labels)
     }
 
     enum CodingKeys: String, CodingKey {
         case accents
         case background
-        case labels
+        case labels = "label"
+        case labelsInterim = "labels"
     }
 }
 

@@ -44,7 +44,7 @@ final class PersistenceRoundTripTests: XCTestCase {
 
     func testMissingLabelsFallsBackToTwelveWhiteEntries() throws {
         var json = try themeSpecJSONObject(from: BoardThemeStore.createDefaultThemes()[0].spec)
-        json.removeValue(forKey: "labels")
+        json.removeValue(forKey: "label")
         let decoded = try decodeThemeSpec(json)
         XCTAssertEqual(decoded.labels.count, 12)
         XCTAssertTrue(decoded.labels.allSatisfy { $0 == RGB(0xFFFFFF) })
@@ -52,10 +52,19 @@ final class PersistenceRoundTripTests: XCTestCase {
 
     func testCorruptedLabelsFallsBackToTwelveWhiteEntries() throws {
         var json = try themeSpecJSONObject(from: BoardThemeStore.createDefaultThemes()[0].spec)
-        json["labels"] = "not an array at all"
+        json["label"] = "not an array at all"
         let decoded = try decodeThemeSpec(json)
         XCTAssertEqual(decoded.labels.count, 12)
         XCTAssertTrue(decoded.labels.allSatisfy { $0 == RGB(0xFFFFFF) })
+    }
+
+    func testLegacyLabelKeyAndInterimLabelsKeyBothDecode() throws {
+        let spec = BoardThemeStore.createDefaultThemes()[0].spec
+        var json = try themeSpecJSONObject(from: spec)
+        XCTAssertNotNil(json["label"], "encoder must keep writing the shipped \"label\" key")
+        XCTAssertEqual(try decodeThemeSpec(json).labels, spec.labels)
+        json["labels"] = json.removeValue(forKey: "label")
+        XCTAssertEqual(try decodeThemeSpec(json).labels, spec.labels)
     }
 
     // MARK: - Helpers
