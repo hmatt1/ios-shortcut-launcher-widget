@@ -9,11 +9,11 @@ import AppIntents
 
 
 extension WidgetPosition: AppEnum {
-    static var typeDisplayRepresentation: TypeDisplayRepresentation {
+    public static var typeDisplayRepresentation: TypeDisplayRepresentation {
         TypeDisplayRepresentation(name: "Widget Position")
     }
 
-    static var caseDisplayRepresentations: [WidgetPosition: DisplayRepresentation] {
+    public static var caseDisplayRepresentations: [WidgetPosition: DisplayRepresentation] {
         [
             .topLeft: DisplayRepresentation(title: "Top Left"),
             .topRight: DisplayRepresentation(title: "Top Right"),
@@ -29,7 +29,7 @@ extension WidgetPosition: AppEnum {
 }
 
 struct BoardPresetEntity: AppEntity {
-    static var typeDisplayRepresentation: TypeDisplayRepresentation {
+    public static var typeDisplayRepresentation: TypeDisplayRepresentation {
         TypeDisplayRepresentation(name: "Preset")
     }
 
