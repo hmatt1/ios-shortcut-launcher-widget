@@ -1,11 +1,8 @@
 import XCTest
-@testable import LauncherBoard
 
-/// Shared helpers for WidgetLogicTests. This target has no host application
-/// (see project.yml's WidgetLogicTests comment). It reaches Shared/ through
-/// one `@testable import` of LauncherBoard, the app target, and compiles the
-/// widget layer (Widget/LauncherIntent.swift, Widget/LauncherWidgetView.swift)
-/// directly into the test bundle.
+/// Shared helpers for WidgetLogicTests. This target is host-less and compiles
+/// App/, Shared/ and Widget/ (minus the two @main files) directly into the
+/// test bundle - see project.yml's WidgetLogicTests comment.
 
 extension XCTestCase {
     /// The standard weak-reference-after-teardown leak check: registers a

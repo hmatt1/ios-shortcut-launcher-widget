@@ -1,5 +1,4 @@
 import XCTest
-@testable import LauncherBoard
 
 /// `DensityTemplate.all`'s documented design intent (see its doc comment in
 /// Shared/BoardPresetStore.swift), encoded as explicit assertions - the

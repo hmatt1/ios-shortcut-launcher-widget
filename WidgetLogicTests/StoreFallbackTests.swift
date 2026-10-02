@@ -1,5 +1,4 @@
 import XCTest
-@testable import LauncherBoard
 
 /// Regression coverage for the hand-hardened fallback paths in
 /// `BoardPresetStore`/`BoardThemeStore` (force-unwraps removed earlier this

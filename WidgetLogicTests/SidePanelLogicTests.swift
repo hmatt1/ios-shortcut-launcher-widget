@@ -1,6 +1,5 @@
 import XCTest
 import SwiftUI
-@testable import LauncherBoard
 
 /// `SidePanel<PanelContent>.draggedBack`/`.releaseAction` - the pure
 /// decision logic behind the panel's drag-to-dismiss gesture

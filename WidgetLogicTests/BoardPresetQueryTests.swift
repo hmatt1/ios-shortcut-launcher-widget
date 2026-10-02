@@ -1,5 +1,4 @@
 import XCTest
-@testable import LauncherBoard
 
 /// `BoardPresetQuery.defaultResult()` (Widget/LauncherIntent.swift) feeds
 /// directly into what a freshly-added widget's configuration defaults to -

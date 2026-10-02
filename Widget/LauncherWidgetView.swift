@@ -3,12 +3,6 @@ import AppIntents
 import SwiftUI
 import WidgetKit
 
-#if canImport(LauncherBoard)
-// Only true when this file is compiled into WidgetLogicTests, which reaches
-// Shared/ through its host app module. In the widget extension, Shared/ is
-// compiled in directly, so there is no such module and this is a no-op.
-@testable import LauncherBoard
-#endif
 
 /// This file and `Widget/LauncherIntent.swift` must stay in `Widget/` and out
 /// of `Shared/`: `Shared/` is also compiled into the app, and a second copy of

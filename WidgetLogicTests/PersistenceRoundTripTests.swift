@@ -1,5 +1,4 @@
 import XCTest
-@testable import LauncherBoard
 
 /// Codable round-trip fidelity for the current schema, plus the defensive
 /// fallbacks `BoardPreset`/`ThemeSpec`'s decoders keep on purpose (see

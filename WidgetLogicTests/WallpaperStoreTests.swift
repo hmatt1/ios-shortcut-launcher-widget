@@ -1,6 +1,5 @@
 import XCTest
 import UIKit
-@testable import LauncherBoard
 
 /// `WallpaperStore`'s actual image pipeline (Shared/WallpaperStore.swift) -
 /// only its geometry math is covered elsewhere (WidgetGeometryTests, which

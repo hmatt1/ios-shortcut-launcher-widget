@@ -1,5 +1,4 @@
 import XCTest
-@testable import LauncherBoard
 
 /// Replaces Tools/verify-widget-geometry.py: checks the real
 /// `WidgetGeometry.frame(family:position:screenPoints:)` directly, across

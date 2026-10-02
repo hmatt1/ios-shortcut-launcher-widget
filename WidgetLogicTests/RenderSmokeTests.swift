@@ -2,7 +2,6 @@ import XCTest
 import SwiftUI
 import UIKit
 import WidgetKit
-@testable import LauncherBoard
 
 /// Forces `LauncherWidgetView.body` to actually evaluate, not just
 /// construct - merely building a `View` struct never runs `body` at all
@@ -25,14 +24,11 @@ import WidgetKit
 /// path, so the actual widget host's behavior is unchanged; only these tests
 /// ever pass a non-nil value.
 ///
-/// This test target depends on `LauncherBoard` (the app target), not
-/// `LauncherBoardWidget` (the widget extension) - see project.yml's
-/// WidgetLogicTests comment for why (an app-extension's compiled binary
-/// isn't linkable the way an app's is, confirmed by a real CI link failure).
-/// `LauncherWidgetView`/`LauncherEntry`/etc. live in Shared/ now for exactly
-/// that reason, so `PresetEditorView`'s own board preview
-/// (App/PresetEditor.swift) is technically reachable too via this same
-/// import - not exercised here on purpose, since `PresetEditorView.boardView`
+/// This test target compiles `LauncherWidgetView`/`LauncherEntry`/etc.
+/// (Widget/) directly, since the widget extension's binary isn't linkable -
+/// see project.yml's WidgetLogicTests comment. `PresetEditorView`'s own
+/// board preview (App/PresetEditor.swift) is compiled in too, but not
+/// exercised here on purpose, since `PresetEditorView.boardView`
 /// and `LauncherWidgetView.body` both build on the exact same shared
 /// `BoardView`/`SlotFace` (Shared/BoardView.swift); rendering
 /// `LauncherWidgetView` already exercises that shared pipeline directly.

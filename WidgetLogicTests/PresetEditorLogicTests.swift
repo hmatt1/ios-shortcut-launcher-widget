@@ -1,5 +1,4 @@
 import XCTest
-@testable import LauncherBoard
 
 /// `CustomStepper.clamped(_:advancingBy:range:)` and
 /// `PresetEditorView.edgeSwipeAction(...)`/`.currentTemplateName`

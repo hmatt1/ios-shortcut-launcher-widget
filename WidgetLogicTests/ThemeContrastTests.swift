@@ -1,5 +1,4 @@
 import XCTest
-@testable import LauncherBoard
 
 /// Replaces the contrast-ratio checks from Tools/verify-layout.py (its
 /// docstring items 5-6), now run against the real `Theme.spec` values in

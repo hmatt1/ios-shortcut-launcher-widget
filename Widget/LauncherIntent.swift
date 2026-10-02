@@ -1,19 +1,14 @@
 import Foundation
 import AppIntents
 
-#if canImport(LauncherBoard)
-// See the note in Widget/LauncherWidgetView.swift.
-@testable import LauncherBoard
-#endif
-
 
 
 extension WidgetPosition: AppEnum {
-    public static var typeDisplayRepresentation: TypeDisplayRepresentation {
+    static var typeDisplayRepresentation: TypeDisplayRepresentation {
         TypeDisplayRepresentation(name: "Widget Position")
     }
 
-    public static var caseDisplayRepresentations: [WidgetPosition: DisplayRepresentation] {
+    static var caseDisplayRepresentations: [WidgetPosition: DisplayRepresentation] {
         [
             .topLeft: DisplayRepresentation(title: "Top Left"),
             .topRight: DisplayRepresentation(title: "Top Right"),
@@ -29,7 +24,7 @@ extension WidgetPosition: AppEnum {
 }
 
 struct BoardPresetEntity: AppEntity {
-    public static var typeDisplayRepresentation: TypeDisplayRepresentation {
+    static var typeDisplayRepresentation: TypeDisplayRepresentation {
         TypeDisplayRepresentation(name: "Preset")
     }
 

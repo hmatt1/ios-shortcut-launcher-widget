@@ -1,6 +1,5 @@
 import XCTest
 import SwiftUI
-@testable import LauncherBoard
 
 /// `PresetListView.deletePreset`/`ThemeListView.deleteTheme`'s
 /// delete-reassigns-selection logic (App/PresetList.swift,

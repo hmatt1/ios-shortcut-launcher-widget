@@ -151,20 +151,30 @@ targets:
   # WidgetFamily -> BoardSize mapping that caused the XL widget crash. Runs
   # on every push via .github/workflows/build.yml (unlike the two Simulator-
   # UI-driving targets above, which are slow and either manual or on-demand).
-  # Shared/ reaches the tests through `@testable import LauncherBoard` (the
-  # app target is the standard, linkable host for a host-less XCTest bundle;
-  # an app extension's .appex is not - a direct dependency on it failed at
-  # LINK time). The widget layer (Widget/LauncherIntent.swift,
-  # Widget/LauncherWidgetView.swift) is compiled straight into this test
-  # bundle instead, minus Widget.swift's @main. It must NOT live in Shared/:
-  # Shared/ is compiled into the app too, and a duplicate copy of the
-  # widget's App Intents in the app binary breaks widget taps.
+  # Host-less: no TEST_HOST and no dependency on any other target. An app
+  # extension's .appex isn't linkable (a direct dependency on it failed at
+  # LINK time), and a dependency on the app makes cross-module access to its
+  # internal types awkward (AppIntents metadata extraction rejects an AppEnum
+  # whose enum lives in another module). So the test bundle compiles the
+  # sources itself: App/ and Shared/ and Widget/, minus the two @main files
+  # (App/App.swift, Widget/Widget.swift) and the plists/assets. The widget
+  # layer (Widget/LauncherIntent.swift, Widget/LauncherWidgetView.swift) must
+  # NOT move into Shared/: Shared/ is compiled into the app too, and a
+  # duplicate copy of the widget's App Intents in the app binary breaks
+  # widget taps.
   WidgetLogicTests:
     type: bundle.unit-test
     platform: iOS
     deploymentTarget: "27.0"
     sources:
       - WidgetLogicTests
+      - path: App
+        excludes:
+          - App.swift
+          - Assets.xcassets
+          - Info.plist
+          - "*.entitlements"
+      - Shared
       - path: Widget
         excludes:
           - Widget.swift
@@ -177,8 +187,6 @@ targets:
         CODE_SIGN_STYLE: Automatic
         SWIFT_VERSION: "5.0"
         GENERATE_INFOPLIST_FILE: YES
-    dependencies:
-      - target: LauncherBoard
 
   # Phase A of a real .appex memory-footprint check (see
   # .github/workflows/widget-memory-check.yml): SpringBoard automation this

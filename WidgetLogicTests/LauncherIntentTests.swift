@@ -1,5 +1,4 @@
 import XCTest
-@testable import LauncherBoard
 
 /// `LauncherIntent.capped(_:at:)` - the generic the real `slots` property
 /// calls (see Widget/LauncherIntent.swift for why it's generic rather than

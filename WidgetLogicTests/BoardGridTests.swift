@@ -1,5 +1,4 @@
 import XCTest
-@testable import LauncherBoard
 
 /// Exhaustive coverage of `BoardGrid.resolve()` against the real Swift
 /// implementation - replaces Tools/verify-layout.py, which re-derived this
