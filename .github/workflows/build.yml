@@ -270,6 +270,6 @@ jobs:
           tag_name: build-${{ github.run_number }}
           target_commitish: ${{ github.sha }}
           name: "Build ${{ github.run_number }}"
-          prerelease: true
-          make_latest: false
+          prerelease: false
+          make_latest: true
           files: export/LauncherBoard.ipa
