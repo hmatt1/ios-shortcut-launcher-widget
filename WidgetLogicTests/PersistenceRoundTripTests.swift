@@ -35,6 +35,48 @@ final class PersistenceRoundTripTests: XCTestCase {
         XCTAssertEqual(decoded.background, .theme)
     }
 
+    func testFontRoundTripsThroughJSON() throws {
+        var original = BoardPresetStore.createDefaultPresets()[0]
+        original.fontFamily = .avenirNext
+        original.fontWeight = .bold
+        let data = try JSONEncoder().encode(original)
+        let decoded = try JSONDecoder().decode(BoardPreset.self, from: data)
+        XCTAssertEqual(decoded, original)
+        XCTAssertEqual(decoded.fontFamily, .avenirNext)
+        XCTAssertEqual(decoded.fontWeight, .bold)
+    }
+
+    func testMissingFontKeysFallBackToSystemSemibold() throws {
+        var json = try presetJSONObject(from: BoardPresetStore.createDefaultPresets()[0])
+        json.removeValue(forKey: "fontFamily")
+        json.removeValue(forKey: "fontWeight")
+        let decoded = try decodePreset(json)
+        XCTAssertEqual(decoded.fontFamily, .system)
+        XCTAssertEqual(decoded.fontWeight, .semibold)
+    }
+
+    func testUnknownFontValuesFallBackWithoutThrowing() throws {
+        var json = try presetJSONObject(from: BoardPresetStore.createDefaultPresets()[0])
+        json["fontFamily"] = "someFutureFontThisBuildDoesNotKnowAboutYet"
+        json["fontWeight"] = "ultraBlack"
+        let decoded = try decodePreset(json)
+        XCTAssertEqual(decoded.fontFamily, .system)
+        XCTAssertEqual(decoded.fontWeight, .semibold)
+
+        json["fontFamily"] = 42
+        json["fontWeight"] = ["not", "a", "string"]
+        let wrongType = try decodePreset(json)
+        XCTAssertEqual(wrongType.fontFamily, .system)
+        XCTAssertEqual(wrongType.fontWeight, .semibold)
+    }
+
+    func testBuiltInPresetsKeepTheOriginalSystemSemiboldLook() {
+        for preset in BoardPresetStore.createDefaultPresets() {
+            XCTAssertEqual(preset.fontFamily, .system, preset.name)
+            XCTAssertEqual(preset.fontWeight, .semibold, preset.name)
+        }
+    }
+
     func testMissingThemeIdFallsBackToInk() throws {
         var json = try presetJSONObject(from: BoardPresetStore.createDefaultPresets()[0])
         json.removeValue(forKey: "themeId")

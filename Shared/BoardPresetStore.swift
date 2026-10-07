@@ -188,7 +188,9 @@ public class BoardPresetStore: ObservableObject {
             cornerRadius: existing.cornerRadius,
             outerCornerRadius: existing.outerCornerRadius,
             themeId: existing.themeId,
-            background: existing.background
+            background: existing.background,
+            fontFamily: existing.fontFamily,
+            fontWeight: existing.fontWeight
         )
         if let index = presets.firstIndex(where: { $0.id == id }) {
             presets.insert(newPreset, at: index + 1)
@@ -239,7 +241,9 @@ public class BoardPresetStore: ObservableObject {
                 cornerRadius: defaultPreset.cornerRadius,
                 outerCornerRadius: defaultPreset.outerCornerRadius,
                 themeId: defaultPreset.themeId,
-                background: defaultPreset.background
+                background: defaultPreset.background,
+                fontFamily: defaultPreset.fontFamily,
+                fontWeight: defaultPreset.fontWeight
             ))
         }
         save()
@@ -262,6 +266,7 @@ public class BoardPresetStore: ObservableObject {
             && a.paddingX == b.paddingX && a.paddingY == b.paddingY
             && a.cornerRadius == b.cornerRadius && a.outerCornerRadius == b.outerCornerRadius
             && a.themeId == b.themeId && a.background == b.background
+            && a.fontFamily == b.fontFamily && a.fontWeight == b.fontWeight
     }
 
     /// `base` if unused, otherwise `base (Original)`, then `base (Original 2)`, and so on.

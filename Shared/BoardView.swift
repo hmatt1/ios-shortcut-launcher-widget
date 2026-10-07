@@ -58,7 +58,6 @@ struct SlotFace: View {
         
         Text(name)
             .font(font)
-            .fontWeight(.semibold)
             .foregroundStyle(label)
             .lineLimit(mode.lineLimit)
             .minimumScaleFactor(0.6)

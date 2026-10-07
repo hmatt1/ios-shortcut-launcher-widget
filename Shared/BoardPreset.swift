@@ -15,6 +15,8 @@ public struct BoardPreset: Codable, Sendable, Identifiable, Equatable {
     public var outerCornerRadius: CGFloat
     public var themeId: UUID
     public var background: BackgroundStyle
+    public var fontFamily: BoardFontFamily
+    public var fontWeight: BoardFontWeight
 
     public init(
         id: UUID = UUID(),
@@ -29,7 +31,9 @@ public struct BoardPreset: Codable, Sendable, Identifiable, Equatable {
         cornerRadius: CGFloat,
         outerCornerRadius: CGFloat? = nil,
         themeId: UUID,
-        background: BackgroundStyle
+        background: BackgroundStyle,
+        fontFamily: BoardFontFamily = .system,
+        fontWeight: BoardFontWeight = .semibold
     ) {
         self.id = id
         self.name = name
@@ -44,10 +48,12 @@ public struct BoardPreset: Codable, Sendable, Identifiable, Equatable {
         self.outerCornerRadius = outerCornerRadius ?? cornerRadius
         self.themeId = themeId
         self.background = background
+        self.fontFamily = fontFamily
+        self.fontWeight = fontWeight
     }
 
     enum CodingKeys: CodingKey {
-        case id, name, columns, marginX, marginY, spacingX, spacingY, paddingX, paddingY, cornerRadius, outerCornerRadius, themeId, background
+        case id, name, columns, marginX, marginY, spacingX, spacingY, paddingX, paddingY, cornerRadius, outerCornerRadius, themeId, background, fontFamily, fontWeight
     }
 
     public init(from decoder: Decoder) throws {
@@ -67,6 +73,11 @@ public struct BoardPreset: Codable, Sendable, Identifiable, Equatable {
         // throw here, or one bad preset drops the whole store.
         background = (try? container.decode(BackgroundStyle.self, forKey: .background)) ?? .theme
         themeId = try container.decodeIfPresent(UUID.self, forKey: .themeId) ?? BoardThemeStore.defaultThemeId(for: .ink)
+        // Lenient for the same reason as `background`: a missing key (a preset
+        // saved before fonts existed) or an ID this build doesn't know must
+        // fall back to the original look, never drop the store.
+        fontFamily = (try? container.decodeIfPresent(BoardFontFamily.self, forKey: .fontFamily)) ?? .system
+        fontWeight = (try? container.decodeIfPresent(BoardFontWeight.self, forKey: .fontWeight)) ?? .semibold
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -84,6 +95,8 @@ public struct BoardPreset: Codable, Sendable, Identifiable, Equatable {
         try container.encode(outerCornerRadius, forKey: .outerCornerRadius)
         try container.encode(themeId, forKey: .themeId)
         try container.encode(background, forKey: .background)
+        try container.encode(fontFamily, forKey: .fontFamily)
+        try container.encode(fontWeight, forKey: .fontWeight)
     }
 
     public var activeSpec: ThemeSpec {

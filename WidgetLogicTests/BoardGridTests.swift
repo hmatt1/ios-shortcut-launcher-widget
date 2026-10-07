@@ -36,6 +36,62 @@ final class BoardGridTests: XCTestCase {
     /// template x name length - the same combinatorial space
     /// Tools/verify-layout.py covered (313,696 checks), now against the
     /// real function.
+    /// The same structural invariants, for every font family and weight: a
+    /// wider or taller face changes only which text rung is chosen, never the
+    /// grid, and the chosen rung must satisfy the fit test with that face's own
+    /// metrics (or be the smallest rung, the fallback).
+    func testInvariantsHoldForEveryFontFamilyAndWeight() {
+        let epsilon: CGFloat = 1e-6
+        for family in BoardFontFamily.allCases {
+            for weight in BoardFontWeight.allCases {
+                for size in TestMatrix.allSizes {
+                    for count in TestMatrix.slotCounts {
+                        for layout in TestMatrix.allLayouts {
+                            for nameLength in TestMatrix.nameLengths {
+                                let (grid, visibleSlots) = BoardGrid.resolve(
+                                    count: count, size: size, longestName: nameLength, layout: layout,
+                                    fontFamily: family, fontWeight: weight
+                                )
+                                let label = "\(family.rawValue)/\(weight.rawValue)/\(size)/\(count)/\(nameLength)"
+                                XCTAssertGreaterThanOrEqual(grid.columns, 1, label)
+                                XCTAssertLessThanOrEqual(visibleSlots, min(count, BoardGrid.maxSlots), label)
+                                let cell = resolvedCell(grid, size: size)
+                                XCTAssertGreaterThanOrEqual(cell.width, 1 - epsilon, label)
+                                XCTAssertGreaterThanOrEqual(cell.height, 1 - epsilon, label)
+                                XCTAssertEqual(grid.fontFamily, family, label)
+                                XCTAssertEqual(grid.fontWeight, weight, label)
+
+                                // Same grid as the system font: fonts never move tiles.
+                                let reference = BoardGrid.resolve(
+                                    count: count, size: size, longestName: nameLength, layout: layout
+                                ).grid
+                                XCTAssertEqual(grid.columns, reference.columns, label)
+                                XCTAssertEqual(grid.rows, reference.rows, label)
+                                XCTAssertEqual(grid.layout.marginX, reference.layout.marginX, accuracy: epsilon, label)
+                                XCTAssertEqual(grid.layout.paddingX, reference.layout.paddingX, accuracy: epsilon, label)
+
+                                // The chosen rung fits with this family's metrics,
+                                // unless it is already the smallest rung.
+                                let lines = CGFloat(grid.mode.lineLimit)
+                                let width = max(1, cell.width - grid.layout.paddingX * 2)
+                                let characters = CGFloat(max(4, nameLength))
+                                let needed = grid.fontPoints * family.averageAdvance(weight: weight) * characters
+                                let used = min(lines, max(1, (needed / width).rounded(.up)))
+                                let fitsHeight = (cell.height - grid.layout.paddingY * 2)
+                                    >= grid.fontPoints * family.lineHeightFactor * used + 6
+                                let isSmallest = grid.fontPoints == 12
+                                if !isSmallest {
+                                    XCTAssertLessThanOrEqual(needed, width * lines + epsilon, label)
+                                    XCTAssertTrue(fitsHeight, label)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     func testExhaustiveInvariants() {
         let epsilon: CGFloat = 1e-6
         var checked = 0

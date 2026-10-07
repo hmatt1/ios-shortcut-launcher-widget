@@ -195,6 +195,30 @@ struct PresetEditorView: View {
                         CustomStepper(title: "Outer Corners", value: $preset.outerCornerRadius, range: 0...32, step: 1, stringValue: "\(Int(preset.outerCornerRadius))")
                     }
                     
+                    Section("Font") {
+                        Picker("Font", selection: $preset.fontFamily) {
+                            ForEach(BoardFontFamily.allCases, id: \.self) { family in
+                                Text(family.displayName)
+                                    .font(family.font(style: .body, points: 17, weight: .regular))
+                                    .tag(family)
+                            }
+                        }
+                        .pickerStyle(.menu)
+
+                        Picker("Weight", selection: $preset.fontWeight) {
+                            ForEach(BoardFontWeight.allCases, id: \.self) { weight in
+                                Text(weight.displayName).tag(weight)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+
+                        if preset.fontFamily.weightsAreSnapped {
+                            Text("\(preset.fontFamily.displayName) has Regular and Bold only. Medium uses Regular and Semibold uses Bold.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+
                     Section("Background") {
                         Picker("Style", selection: $preset.background) {
                             ForEach(BackgroundStyle.allCases, id: \.self) { style in
@@ -484,7 +508,9 @@ struct PresetEditorView: View {
             count: slots,
             size: size,
             longestName: rawNames.map(\.count).max() ?? 0,
-            layout: layout
+            layout: layout,
+            fontFamily: preset.fontFamily,
+            fontWeight: preset.fontWeight
         )
         let grid = resolved.grid
         let names = Array(rawNames.prefix(resolved.visibleSlots))

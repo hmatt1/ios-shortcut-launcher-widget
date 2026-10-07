@@ -58,13 +58,22 @@ struct BoardGrid: Sendable {
     let rows: Int
     let mode: TileMode
     let layout: BoardLayoutValues
-    let font: Font
+    let fontStyle: Font.TextStyle
+    let fontPoints: CGFloat
+    let fontFamily: BoardFontFamily
+    let fontWeight: BoardFontWeight
+
+    var font: Font {
+        fontFamily.font(style: fontStyle, points: fontPoints, weight: fontWeight)
+    }
 
     static func resolve(
         count: Int,
         size: BoardSize,
         longestName: Int,
-        layout requestedLayout: BoardLayoutValues
+        layout requestedLayout: BoardLayoutValues,
+        fontFamily: BoardFontFamily = .system,
+        fontWeight: BoardFontWeight = .semibold
     ) -> (grid: BoardGrid, visibleSlots: Int) {
 
         let requestedSlots = max(1, count)
@@ -151,14 +160,17 @@ struct BoardGrid: Sendable {
         cell.width = max(1, cell.width)
         cell.height = max(1, cell.height)
 
-        let font = textStyle(cell: cell, mode: mode, longestName: longestName, layout: layout)
+        let rung = textStyle(cell: cell, mode: mode, longestName: longestName, layout: layout, family: fontFamily, weight: fontWeight)
 
         let grid = BoardGrid(
             columns: cols,
             rows: rows,
             mode: mode,
             layout: layout,
-            font: font
+            fontStyle: rung.style,
+            fontPoints: rung.points,
+            fontFamily: fontFamily,
+            fontWeight: fontWeight
         )
         return (grid, visibleSlots)
     }
@@ -195,7 +207,7 @@ struct BoardGrid: Sendable {
 
     /// The ladder of text styles, largest first, with the point size each one
     /// resolves to at the default Dynamic Type setting.
-    private static let ladder: [(font: Font, points: CGFloat)] = [
+    private static let ladder: [(style: Font.TextStyle, points: CGFloat)] = [
         (.largeTitle, 34),
         (.title, 28),
         (.title2, 22),
@@ -212,22 +224,34 @@ struct BoardGrid: Sendable {
     /// only its own tile and the grid loses its only ordering principle.
     /// `minimumScaleFactor` in the view is then a safety net, not the
     /// mechanism.
-    private static func textStyle(cell: CGSize, mode: TileMode, longestName: Int, layout: BoardLayoutValues) -> Font {
+    ///
+    /// Returns the rung rather than a `Font` so the preset's family and weight
+    /// are applied in one place (`BoardGrid.font`), and so the glyph width and
+    /// line height used for the fit test are that family's own, not the system
+    /// sans's.
+    static func textStyle(
+        cell: CGSize,
+        mode: TileMode,
+        longestName: Int,
+        layout: BoardLayoutValues,
+        family: BoardFontFamily = .system,
+        weight: BoardFontWeight = .semibold
+    ) -> (style: Font.TextStyle, points: CGFloat) {
         let width = max(1, cell.width - layout.paddingX * 2)
         let characters = CGFloat(max(4, longestName))
         let lines = CGFloat(mode.lineLimit)
 
         for step in ladder {
-            // 0.55 em is a reasonable average advance for a semibold sans face.
-            let needed = step.points * 0.55 * characters
+            // Average advance is per family and weight (0.55 em for system Semibold).
+            let needed = step.points * family.averageAdvance(weight: weight) * characters
             let used = min(lines, max(1, (needed / width).rounded(.up)))
             let fitsWidth = used <= lines
-            let fitsHeight = (cell.height - layout.paddingY * 2) >= step.points * 1.25 * used + 6
+            let fitsHeight = (cell.height - layout.paddingY * 2) >= step.points * family.lineHeightFactor * used + 6
             if fitsWidth && needed <= width * lines && fitsHeight {
-                return step.font
+                return step
             }
         }
-        return .caption
+        return ladder[ladder.count - 1]
     }
 }
 

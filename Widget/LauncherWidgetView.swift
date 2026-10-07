@@ -111,7 +111,9 @@ struct LauncherWidgetView: View {
             count: rawNames.count,
             size: size,
             longestName: rawNames.map(\.count).max() ?? 0,
-            layout: layout
+            layout: layout,
+            fontFamily: preset.fontFamily,
+            fontWeight: preset.fontWeight
         )
 
         let grid = resolved.grid

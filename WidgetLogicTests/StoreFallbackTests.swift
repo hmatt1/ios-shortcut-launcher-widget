@@ -101,6 +101,7 @@ final class StoreFallbackTests: XCTestCase {
                 && preset.paddingX == defaultLook.paddingX && preset.paddingY == defaultLook.paddingY
                 && preset.cornerRadius == defaultLook.cornerRadius && preset.outerCornerRadius == defaultLook.outerCornerRadius
                 && preset.themeId == defaultLook.themeId && preset.background == defaultLook.background
+                && preset.fontFamily == defaultLook.fontFamily && preset.fontWeight == defaultLook.fontWeight
         }
         guard let target = store.presets.first(where: matches) else {
             return XCTFail("expected the first built-in's look to be present after restoreDefaultPresets()")
@@ -130,6 +131,43 @@ final class StoreFallbackTests: XCTestCase {
         XCTAssertEqual(copy.marginX, original.marginX)
         XCTAssertEqual(copy.themeId, original.themeId)
         XCTAssertEqual(copy.background, original.background)
+    }
+
+    func testDuplicatingAPresetKeepsItsFont() {
+        let store = BoardPresetStore.shared
+        let created = store.create(name: "StoreFallbackTests-duplicate-font")
+        var styled = created
+        styled.fontFamily = .georgia
+        styled.fontWeight = .medium
+        store.update(styled)
+        store.duplicate(id: created.id)
+
+        guard let index = store.presets.firstIndex(where: { $0.id == created.id }) else {
+            return XCTFail("the original preset should still be present")
+        }
+        let copy = store.presets[index + 1]
+        XCTAssertEqual(copy.fontFamily, .georgia)
+        XCTAssertEqual(copy.fontWeight, .medium)
+    }
+
+    /// A built-in whose only change is its font is a different look, so
+    /// restoring defaults must add the original back instead of treating the
+    /// edited one as still being it.
+    func testRestoringDefaultsTreatsAFontEditedBuiltInAsDifferent() {
+        let store = BoardPresetStore.shared
+        store.restoreDefaultPresets()
+        guard let defaultLook = BoardPresetStore.createDefaultPresets().first,
+              var target = store.presets.first(where: { $0.id == defaultLook.id }) else {
+            return XCTFail("expected the first built-in to be present")
+        }
+        let countBefore = store.presets.count
+        target.fontFamily = .monospaced
+        store.update(target)
+        XCTAssertTrue(store.canRestoreDefaultPresets, "a font-only edit should make the original restorable")
+
+        store.restoreDefaultPresets()
+        XCTAssertEqual(store.presets.count, countBefore + 1)
+        XCTAssertFalse(store.canRestoreDefaultPresets, "the original is back, so nothing is left to restore")
     }
 
     func testDuplicatingAThemeInsertsAnIdenticalLookRightAfterTheOriginal() {
