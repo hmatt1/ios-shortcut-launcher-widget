@@ -1,0 +1,43 @@
+name: Revoke orphan certificate
+
+# One-off. Revokes the unused Distribution certificate 37C522AMN4 (expires
+# 2027-10-07) and nothing else. Refuses to act if the ID or expiry differ.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  revoke:
+    runs-on: ubuntu-latest
+    steps:
+      - run: pip install pyjwt cryptography
+      - name: Revoke
+        env:
+          ASC_KEY_ID: ${{ secrets.ADMIN_APPSTORE_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+          ASC_P8: ${{ secrets.ADMIN_APPSTORE_P8_KEY }}
+        run: |
+          python3 - <<'PY'
+          import os, time, json, urllib.request, urllib.error, jwt
+          CERT = "37C522AMN4"
+          now = int(time.time())
+          token = jwt.encode({"iss": os.environ["ASC_ISSUER_ID"], "iat": now, "exp": now + 600,
+                              "aud": "appstoreconnect-v1"}, os.environ["ASC_P8"], algorithm="ES256",
+                             headers={"kid": os.environ["ASC_KEY_ID"], "typ": "JWT"})
+          def call(method):
+              req = urllib.request.Request(f"https://api.appstoreconnect.apple.com/v1/certificates/{CERT}", method=method)
+              req.add_header("Authorization", f"Bearer {token}")
+              with urllib.request.urlopen(req) as r:
+                  raw = r.read()
+                  return json.loads(raw) if raw else {}
+          cert = call("GET")["data"]
+          attrs = cert["attributes"]
+          print("found:", cert["id"], attrs.get("certificateType"), attrs.get("expirationDate"))
+          if cert["id"] != CERT or not attrs.get("expirationDate", "").startswith("2027-10-07"):
+              raise SystemExit("Certificate does not match the expected orphan. Not revoking.")
+          call("DELETE")
+          print("revoked", CERT)
+          PY
