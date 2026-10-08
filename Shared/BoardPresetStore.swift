@@ -192,6 +192,7 @@ public class BoardPresetStore: ObservableObject {
             fontFamily: existing.fontFamily,
             fontWeight: existing.fontWeight
         )
+        ButtonImageStore.copyAll(from: id, to: newPreset.id)
         if let index = presets.firstIndex(where: { $0.id == id }) {
             presets.insert(newPreset, at: index + 1)
         } else {
@@ -209,6 +210,7 @@ public class BoardPresetStore: ObservableObject {
     public func delete(id: UUID) {
         guard presets.count > 1 else { return }
         presets.removeAll { $0.id == id }
+        ButtonImageStore.removeAll(presetId: id)
         save()
     }
 

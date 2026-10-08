@@ -73,6 +73,8 @@ targets:
         embed: true
       - sdk: SwiftUI.framework
       - sdk: WidgetKit.framework
+      # The Shortcuts actions in App/Intents.
+      - sdk: AppIntents.framework
     # Attaches WidgetScreenshotsUITests to this target's own auto-generated
     # scheme's Test action, via XcodeGen's per-target `scheme.testTargets`
     # convenience - the only thing it changes is adding a Test action entry,

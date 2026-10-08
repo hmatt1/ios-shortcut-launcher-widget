@@ -199,6 +199,12 @@ jobs:
             echo "ERROR: the widget extension is missing LauncherIntent App Intents metadata."
             exit 1
           fi
+          # The app's own Shortcuts actions (App/Intents) should be in the app
+          # bundle. A warning, not a failure: it tells us before a device does
+          # if Shortcuts would not list them.
+          if ! grep -rl "UpdatePresetIntent" "$APP_DIR"/Metadata.appintents 2>/dev/null; then
+            echo "::warning::the app bundle has no UpdatePresetIntent App Intents metadata; Shortcuts actions may be missing."
+          fi
 
           # 3. Create ExportOptions.plist - manual signing, pointing at the
           # exact same fixed certificate and profiles as project.yml.

@@ -59,6 +59,7 @@ struct LauncherWidgetView: View {
     let entry: LauncherEntry
 
     @Environment(\.widgetFamily) private var environmentFamily
+    @Environment(\.displayScale) private var displayScale
     @Environment(\.widgetRenderingMode) private var environmentRenderingMode
     @Environment(\.showsWidgetContainerBackground) private var environmentShowsContainerBackground
 
@@ -142,7 +143,7 @@ struct LauncherWidgetView: View {
                     BoardView(grid: grid, count: names.count) { index, col, row in
                         if sample.isEmpty {
                             Button(intent: RunSystemShortcutIntent(shortcut: slots[index])) {
-                                face(name: names[index], index: index, col: col, row: row, grid: grid, accented: accented, spec: preset.activeSpec)
+                                face(name: names[index], index: index, col: col, row: row, grid: grid, accented: accented, spec: preset.activeSpec, image: buttonImage(preset: preset, index: index, grid: grid, size: size))
                             }
                             .buttonStyle(.plain)
                         } else {
@@ -161,7 +162,17 @@ struct LauncherWidgetView: View {
         )
     }
 
-    private func face(name: String, index: Int, col: Int, row: Int, grid: BoardGrid, accented: Bool, spec: ThemeSpec) -> SlotFace {
+    /// The picture for the button at `index`, decoded at tile size so the
+    /// extension never holds more than roughly its own canvas in bitmaps.
+    private func buttonImage(preset: BoardPreset, index: Int, grid: BoardGrid, size: BoardSize) -> UIImage? {
+        ButtonImageStore.image(
+            presetId: preset.id,
+            button: index + 1,
+            maxPixel: ButtonImageStore.pixelSize(forCell: grid.cellSize(in: size.canvas), scale: displayScale)
+        )
+    }
+
+    private func face(name: String, index: Int, col: Int, row: Int, grid: BoardGrid, accented: Bool, spec: ThemeSpec, image: UIImage? = nil) -> SlotFace {
         return SlotFace(
             name: name,
             surface: spec.surface(at: index, accented: accented),
@@ -173,7 +184,8 @@ struct LauncherWidgetView: View {
             topLeadingRadius: grid.topLeadingRadius(col: col, row: row),
             bottomLeadingRadius: grid.bottomLeadingRadius(col: col, row: row),
             bottomTrailingRadius: grid.bottomTrailingRadius(col: col, row: row),
-            topTrailingRadius: grid.topTrailingRadius(col: col, row: row)
+            topTrailingRadius: grid.topTrailingRadius(col: col, row: row),
+            image: image
         )
     }
 }

@@ -64,6 +64,11 @@ struct PresetEditorView: View {
     
     @State private var preset: BoardPreset
     @State private var wallpaperItem: PhotosPickerItem?
+    @State private var buttonImageItem: PhotosPickerItem?
+    /// Button numbers that have an image; refreshed after every change so the
+    /// list and the preview follow the files on disk.
+    @State private var imageButtons: [Int]
+    @State private var newButtonNumber: Int
     /// Which slot the preview blends into. The real per-widget position is set
     /// in the widget's Edit sheet; this only steers the in-app preview.
     @AppStorage("previewWidgetPosition", store: AppGroup.defaults)
@@ -105,6 +110,9 @@ struct PresetEditorView: View {
         // the store were somehow empty.
         let p = BoardPresetStore.shared.presets.first(where: { $0.id == presetId }) ?? BoardPresetStore.loadPreset(id: presetId)
         _preset = State(initialValue: p)
+        let existing = ButtonImageStore.buttons(presetId: presetId)
+        _imageButtons = State(initialValue: existing)
+        _newButtonNumber = State(initialValue: Self.lowestUnusedButton(in: existing))
     }
     
     var body: some View {
@@ -217,6 +225,54 @@ struct PresetEditorView: View {
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
+                    }
+
+                    Section("Button Images") {
+                        ForEach(imageButtons, id: \.self) { button in
+                            HStack {
+                                if let thumb = ButtonImageStore.image(presetId: preset.id, button: button, maxPixel: 96) {
+                                    Image(uiImage: thumb)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 32, height: 32)
+                                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                                }
+                                Text("Button \(button)")
+                                Spacer()
+                                Button(role: .destructive) {
+                                    removeButtonImage(button)
+                                } label: {
+                                    Image(systemName: "trash")
+                                }
+                                .buttonStyle(.borderless)
+                                .accessibilityLabel("Remove image for button \(button)")
+                            }
+                        }
+
+                        CustomStepper(title: "Button Number", value: $newButtonNumber, range: ButtonImageStore.buttonRange, step: 1, stringValue: "\(newButtonNumber)")
+
+                        PhotosPicker(selection: $buttonImageItem, matching: .images) {
+                            Text("Set Image for Button \(newButtonNumber)")
+                        }
+                        .onChange(of: buttonImageItem) { _, newItem in
+                            guard let newItem else { return }
+                            let button = newButtonNumber
+                            let presetId = preset.id
+                            Task {
+                                let data = try? await newItem.loadTransferable(type: Data.self)
+                                await MainActor.run {
+                                    if let data, ButtonImageStore.save(data: data, presetId: presetId, button: button) {
+                                        refreshImageButtons()
+                                        WidgetCenter.shared.reloadAllTimelines()
+                                    }
+                                    buttonImageItem = nil
+                                }
+                            }
+                        }
+
+                        Text("Buttons are numbered in the order you pick shortcuts in the widget. A button with an image hides its name. Images are shared by every widget using this preset.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
 
                     Section("Background") {
@@ -500,6 +556,21 @@ struct PresetEditorView: View {
         preset.outerCornerRadius = template.layout.outerCornerRadius
     }
     
+    private static func lowestUnusedButton(in used: [Int]) -> Int {
+        ButtonImageStore.buttonRange.first { !used.contains($0) } ?? ButtonImageStore.buttonRange.upperBound
+    }
+
+    private func refreshImageButtons() {
+        imageButtons = ButtonImageStore.buttons(presetId: preset.id)
+        newButtonNumber = Self.lowestUnusedButton(in: imageButtons)
+    }
+
+    private func removeButtonImage(_ button: Int) {
+        ButtonImageStore.remove(presetId: preset.id, button: button)
+        refreshImageButtons()
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
     private var boardView: some View {
         let rawNames = (0..<slots).map { BoardSample.names[$0 % BoardSample.names.count] }
         let layout = preset.layoutValues
@@ -527,7 +598,14 @@ struct PresetEditorView: View {
                 topLeadingRadius: grid.topLeadingRadius(col: col, row: row),
                 bottomLeadingRadius: grid.bottomLeadingRadius(col: col, row: row),
                 bottomTrailingRadius: grid.bottomTrailingRadius(col: col, row: row),
-                topTrailingRadius: grid.topTrailingRadius(col: col, row: row)
+                topTrailingRadius: grid.topTrailingRadius(col: col, row: row),
+                image: imageButtons.contains(index + 1)
+                    ? ButtonImageStore.image(
+                        presetId: preset.id,
+                        button: index + 1,
+                        maxPixel: ButtonImageStore.pixelSize(forCell: grid.cellSize(in: size.canvas), scale: UIScreen.main.scale)
+                    )
+                    : nil
             )
         }
         .frame(width: size.canvas.width, height: size.canvas.height)

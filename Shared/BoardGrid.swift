@@ -67,6 +67,17 @@ struct BoardGrid: Sendable {
         fontFamily.font(style: fontStyle, points: fontPoints, weight: fontWeight)
     }
 
+    /// One tile's size in points on `canvas`, after any spacing and margin
+    /// degradation `resolve` applied. Used to decode button images at tile size.
+    func cellSize(in canvas: CGSize) -> CGSize {
+        let width = canvas.width - layout.marginX * 2 - layout.spacingX * CGFloat(max(0, columns - 1))
+        let height = canvas.height - layout.marginY * 2 - layout.spacingY * CGFloat(max(0, rows - 1))
+        return CGSize(
+            width: max(1, width / CGFloat(columns)),
+            height: max(1, height / CGFloat(rows))
+        )
+    }
+
     static func resolve(
         count: Int,
         size: BoardSize,

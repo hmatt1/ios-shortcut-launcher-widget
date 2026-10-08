@@ -70,6 +70,16 @@ Presets store stable IDs (`"avenirNext"`, `"bold"`), never font names, and decod
 
 Sizing has to know how wide a face runs. `BoardGrid.textStyle` used to assume 0.55 em per character and a 1.25 line height, which is right for the system sans only; both are now per family (and a small per-weight width adjustment), with system Semibold unchanged so every existing board resolves identically. `WidgetLogicTests/BoardFontTests.swift` measures each family and weight with `UIFont` and fails if the table under-reports (names would overflow a tile) or over-reports by much (text smaller than it needs to be), and `BoardGridTests` re-runs the layout invariants for every family and weight.
 
+### Button images
+
+A preset can give any button a picture (`ButtonImageStore`, `Shared/ButtonImageStore.swift`). Buttons are numbered from 1 in the order the shortcuts are picked in the widget, so an image follows its button number, not a shortcut's name, and every widget using the preset shows the same images. A button with an image fills its tile with the picture and hides its name (the accessibility label stays). Set them in the editor's "Button Images" section.
+
+Images live as small PNGs in the App Group container (`buttonImages/<presetId>/`), never in the preset JSON. The app downsamples each to 512 px on write; the widget decodes each one at its own tile size with an ImageIO thumbnail, so the bitmaps it holds add up to roughly the widget canvas however many buttons have pictures. A missing or unreadable image just shows the normal text tile.
+
+### Shortcuts actions
+
+The app exposes Shortcuts actions (`App/Intents/`, app target only - the widget's own intents must stay out of the app binary, and nothing intent-related may live in `Shared/`): Create, Duplicate, Delete and Update Preset (every field optional, only the ones given change, clamped to the editor's ranges), and Set Button Image, Remove Button Image and Remove All Button Images. Button numbers run 1 to 64 in the order shortcuts are picked in the widget. The pure parts (`PresetEdit`, button validation) are unit-tested; the actions themselves can only be checked on a device. Theme actions are not built yet.
+
 ## Rendering
 
 Accented mode was designed first. When someone picks a tinted or clear Home Screen the system switches the widget out of `WidgetRenderingMode.fullColor`, tints content white and replaces the container background. The widget then draws no background and no color, and each tile keeps a translucent white chip, because the system preserves the opacity of translucent content and tints it. That chip is what keeps the board readable as a grid once the color is gone. All widget content is one group, so there is nothing for `.widgetAccentable()` to separate.

@@ -1,4 +1,5 @@
 import SwiftUI
+import WidgetKit
 
 extension ThemeSpec {
     /// Tile fill. In accented mode the system keeps the opacity of translucent
@@ -46,6 +47,8 @@ struct SlotFace: View {
     let bottomLeadingRadius: CGFloat
     let bottomTrailingRadius: CGFloat
     let topTrailingRadius: CGFloat
+    /// A picture for this button. When present it replaces the name.
+    var image: UIImage? = nil
 
     var body: some View {
         let shape = UnevenRoundedRectangle(
@@ -55,7 +58,26 @@ struct SlotFace: View {
             topTrailingRadius: topTrailingRadius,
             style: .continuous
         )
-        
+
+        if let image {
+            Color.clear
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .overlay {
+                    Image(uiImage: image)
+                        .resizable()
+                        .widgetAccentedRenderingMode(.fullColor)
+                        .scaledToFill()
+                }
+                .clipShape(shape)
+                .padding(0.5)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(name)
+        } else {
+            textTile(shape: shape)
+        }
+    }
+
+    private func textTile(shape: UnevenRoundedRectangle) -> some View {
         Text(name)
             .font(font)
             .foregroundStyle(label)
