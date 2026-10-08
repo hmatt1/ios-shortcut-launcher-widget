@@ -126,10 +126,10 @@ public enum BoardFontFamily: String, Codable, CaseIterable, Sendable {
         case .system: base = 0.55
         case .rounded: base = 0.57
         case .serif: base = 0.55
-        case .monospaced: base = 0.62
+        // Fixed-pitch faces keep one advance at every weight.
+        case .monospaced, .menlo: return 0.62
         case .avenirNext: base = 0.56
         case .georgia: base = 0.58
-        case .menlo: base = 0.62
         }
         return base + effectiveWeight(weight).advanceAdjustment
     }

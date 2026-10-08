@@ -156,9 +156,11 @@ final class StoreFallbackTests: XCTestCase {
     func testRestoringDefaultsTreatsAFontEditedBuiltInAsDifferent() {
         let store = BoardPresetStore.shared
         store.restoreDefaultPresets()
-        guard let defaultLook = BoardPresetStore.createDefaultPresets().first,
+        // The last built-in ("Forge") has a look no `create(name:)` preset
+        // shares, so no other preset in the shared store can stand in for it.
+        guard let defaultLook = BoardPresetStore.createDefaultPresets().last,
               var target = store.presets.first(where: { $0.id == defaultLook.id }) else {
-            return XCTFail("expected the first built-in to be present")
+            return XCTFail("expected the last built-in to be present")
         }
         let countBefore = store.presets.count
         target.fontFamily = .monospaced
