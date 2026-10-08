@@ -146,6 +146,14 @@ jobs:
             LATEST=$(git tag --list 'v[0-9]*' --sort=-v:refname | head -1 | sed 's/^v//')
             LATEST=${LATEST:-0.0.0}
             VERSION="${LATEST%.*}.$(( ${LATEST##*.} + 1 ))"
+            # App Store Connect closed the 3.4.5 train (error 90186) once a
+            # build from it was released, but no v3.4.5 tag exists, so the
+            # tag-derived version above can sit at or below a closed train.
+            # Never go below this floor; raise it when a newer train closes.
+            FLOOR="3.4.6"
+            if [ "$(printf '%s\n%s\n' "$VERSION" "$FLOOR" | sort -V | tail -1)" != "$VERSION" ]; then
+              VERSION="$FLOOR"
+            fi
           fi
           echo "Building version $VERSION (build $GITHUB_RUN_NUMBER)"
           echo "RELEASE_VERSION=$VERSION" >> "$GITHUB_ENV"
