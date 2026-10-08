@@ -456,6 +456,7 @@ struct PresetEditorView: View {
                 set: { if let uuid = UUID(uuidString: $0) { preset.themeId = uuid } }
             ), isPresented: $showingThemeList)
         }
+        .onAppear { refreshImageButtons() }
         .onChange(of: preset) { _, newPreset in
             store.update(newPreset)
             WidgetCenter.shared.reloadAllTimelines()

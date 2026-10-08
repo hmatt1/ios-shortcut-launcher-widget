@@ -108,6 +108,35 @@ final class MemoryTests: XCTestCase {
         )
     }
 
+    /// A full set of button pictures must not scale memory with the number of
+    /// buttons: the widget decodes each image at tile size, so the bitmaps it
+    /// holds add up to roughly its canvas. Every button of the largest widget
+    /// gets a stored 512 px image, then the view is rendered repeatedly (the
+    /// image cache is cleared between passes so each pass really decodes).
+    func testButtonImagesStayWithinMemoryBudget() throws {
+        try XCTSkipIf(AppGroup.containerURL == nil, "App Group container is unavailable in this environment.")
+        let presetId = BoardPresetStore.loadPreset(id: UUID()).id
+        let buttons = Array(1...BoardSample.names.count)
+        XCTAssertEqual(seedButtonImages(presetId: presetId, buttons: buttons), buttons)
+        defer { ButtonImageStore.removeAll(presetId: presetId) }
+
+        let before = currentResidentMemoryBytes()
+        for _ in 0..<20 {
+            autoreleasepool {
+                ButtonImageStore.clearCache()
+                let renderer = ImageRenderer(content: makeView(presetId: presetId))
+                _ = renderer.uiImage
+            }
+        }
+        let after = currentResidentMemoryBytes()
+        let deltaMB = ((Double(after) - Double(before)) / 1_048_576 * 100).rounded() / 100
+
+        XCTAssertLessThan(
+            deltaMB, 50,
+            "rendering \(buttons.count) button images 20 times grew resident memory by \(deltaMB)MB"
+        )
+    }
+
     /// Informational only (see the comment above `testRepeatedRenderingStaysWithinMemoryBudget`)
     /// - keeps XCTMemoryMetric's own reporting visible in CI output/Xcode's
     /// test reports, in case a `.xcbaseline` is set up for this target later.

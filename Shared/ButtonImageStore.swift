@@ -100,12 +100,22 @@ enum ButtonImageStore {
         return image
     }
 
+    /// `BoardSize.canvas` is the smallest canvas iOS gives a family (a 320 pt
+    /// wide screen); the largest phones give about this much more. Decoding for
+    /// the smaller canvas would leave pictures slightly soft on a big phone.
+    static let largestCanvasFactor: CGFloat = 1.25
+
     /// Longest side, in pixels, a tile of `cell` points needs at `scale`.
     static func pixelSize(forCell cell: CGSize, scale: CGFloat) -> Int {
-        Int((max(cell.width, cell.height) * max(1, scale)).rounded(.up))
+        Int((max(cell.width, cell.height) * max(1, scale) * largestCanvasFactor).rounded(.up))
     }
 
     // MARK: - Internals
+
+    /// Drops decoded images so the next read decodes again. For tests.
+    static func clearCache() {
+        imageCache.removeAllObjects()
+    }
 
     /// `NSCache` is thread-safe, so the nonisolated readers above can share it.
     nonisolated(unsafe) private static let imageCache = NSCache<NSString, UIImage>()

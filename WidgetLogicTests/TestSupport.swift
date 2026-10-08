@@ -1,4 +1,5 @@
 import XCTest
+import UIKit
 
 /// Shared helpers for WidgetLogicTests. This target is host-less and compiles
 /// App/, Shared/ and Widget/ (minus the two @main files) directly into the
@@ -101,4 +102,26 @@ enum TestMatrix {
     static func name(length: Int) -> String {
         String(repeating: "M", count: length)
     }
+}
+
+/// Stores a 512 px test picture for each of `buttons` and returns the button
+/// numbers that were actually written. Callers must remove them afterwards.
+@MainActor
+func seedButtonImages(presetId: UUID, buttons: [Int]) -> [Int] {
+    let format = UIGraphicsImageRendererFormat()
+    format.scale = 1
+    let renderer = UIGraphicsImageRenderer(size: CGSize(width: 512, height: 512), format: format)
+    var written: [Int] = []
+    for button in buttons {
+        let image = renderer.image { context in
+            UIColor(hue: CGFloat(button % 12) / 12, saturation: 0.7, brightness: 0.9, alpha: 1).setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 512, height: 512))
+            UIColor.white.setFill()
+            context.fill(CGRect(x: 128, y: 128, width: 256, height: 256))
+        }
+        if let data = image.pngData(), ButtonImageStore.save(data: data, presetId: presetId, button: button) {
+            written.append(button)
+        }
+    }
+    return written
 }

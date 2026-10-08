@@ -147,7 +147,7 @@ struct LauncherWidgetView: View {
                             }
                             .buttonStyle(.plain)
                         } else {
-                            face(name: names[index], index: index, col: col, row: row, grid: grid, accented: accented, spec: preset.activeSpec)
+                            face(name: names[index], index: index, col: col, row: row, grid: grid, accented: accented, spec: preset.activeSpec, image: buttonImage(preset: preset, index: index, grid: grid, size: size))
                         }
                     }
                 }

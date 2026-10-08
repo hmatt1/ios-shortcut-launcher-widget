@@ -115,6 +115,27 @@ final class RenderSmokeTests: XCTestCase {
         }
     }
 
+    /// Buttons with pictures go through `ButtonImageStore` and the image branch
+    /// of `SlotFace` at every family, in full color and accented, mixed with
+    /// text tiles. Images are seeded for the preset the widget actually
+    /// resolves (`loadPreset(id:)` falls back to the first one).
+    func testButtonImagesRenderInEveryFamilyAndMode() throws {
+        try XCTSkipIf(AppGroup.containerURL == nil, "App Group container is unavailable in this environment.")
+        let presetId = BoardPresetStore.loadPreset(id: UUID()).id
+        let seeded = seedButtonImages(presetId: presetId, buttons: [1, 3, 4, 7])
+        defer { ButtonImageStore.removeAll(presetId: presetId) }
+        XCTAssertEqual(seeded, [1, 3, 4, 7])
+
+        for family in supportedFamilies {
+            for mode in [WidgetRenderingMode.fullColor, .accented] {
+                XCTAssertNotNil(
+                    render(presetId: presetId, sample: BoardSample.names, family: family, renderingMode: mode),
+                    "image render failed: \(family), \(mode)"
+                )
+            }
+        }
+    }
+
     /// Accented (Lock Screen / non-full-color) rendering is a distinct code
     /// path in `LauncherWidgetView.body` (`accented = renderingMode != .fullColor`),
     /// worth its own pass rather than assuming it shares every branch the

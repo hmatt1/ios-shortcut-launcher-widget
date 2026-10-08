@@ -106,7 +106,7 @@ final class ButtonImageStoreTests: XCTestCase {
     }
 
     func testPixelSizeUsesTheLongestSideAndScale() {
-        XCTAssertEqual(ButtonImageStore.pixelSize(forCell: CGSize(width: 70, height: 50), scale: 3), 210)
+        XCTAssertEqual(ButtonImageStore.pixelSize(forCell: CGSize(width: 70, height: 50), scale: 3), 263)
     }
 
     func testImageTileRendersInFullColorAndAccented() {
