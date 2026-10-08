@@ -88,14 +88,20 @@ final class ButtonImageStoreTests: XCTestCase {
     func testDuplicatingAPresetCopiesItsButtonImages() {
         let store = BoardPresetStore.shared
         let created = store.create(name: "ButtonImageStoreTests-duplicate")
-        defer { ButtonImageStore.removeAll(presetId: created.id) }
+        // The store is shared with other tests, which look for presets by look:
+        // leave neither the original nor its copy behind.
+        var copyId: UUID?
+        defer {
+            store.delete(id: created.id)
+            if let copyId { store.delete(id: copyId) }
+        }
         XCTAssertTrue(ButtonImageStore.save(data: pngData(width: 16, height: 16), presetId: created.id, button: 1))
         store.duplicate(id: created.id)
         guard let index = store.presets.firstIndex(where: { $0.id == created.id }) else {
             return XCTFail("the original preset should still be present")
         }
         let copy = store.presets[index + 1]
-        defer { ButtonImageStore.removeAll(presetId: copy.id) }
+        copyId = copy.id
         XCTAssertEqual(ButtonImageStore.buttons(presetId: copy.id), [1])
     }
 
