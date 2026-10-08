@@ -122,9 +122,13 @@ struct UpdatePresetIntent: AppIntent {
     @Parameter(title: "Background")
     var background: BackgroundStyle?
 
+    @Parameter(title: "Theme")
+    var theme: ThemeAppEntity?
+
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<PresetAppEntity> {
         let existing = try existingPreset(preset)
+        let themeId = try theme.map { try existingTheme($0).id }
         let edit = PresetEdit(
             name: name,
             columns: columns,
@@ -138,7 +142,8 @@ struct UpdatePresetIntent: AppIntent {
             outerCornerRadius: outerCornerRadius,
             fontFamily: fontFamily,
             fontWeight: fontWeight,
-            background: background
+            background: background,
+            themeId: themeId
         )
         let updated = edit.applying(to: existing)
         BoardPresetStore.shared.update(updated)

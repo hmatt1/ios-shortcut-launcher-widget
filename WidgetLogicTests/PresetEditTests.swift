@@ -52,6 +52,13 @@ final class PresetEditTests: XCTestCase {
         XCTAssertEqual(result.background, .transparent)
     }
 
+    func testThemeApplies() {
+        let theme = BoardThemeStore.createDefaultThemes()[3]
+        var edit = PresetEdit()
+        edit.themeId = theme.id
+        XCTAssertEqual(edit.applying(to: base).themeId, theme.id)
+    }
+
     func testButtonNumbersAreValidatedOneThroughMaxSlots() throws {
         XCTAssertEqual(try PresetIntentError.validatedButton(1), 1)
         XCTAssertEqual(try PresetIntentError.validatedButton(BoardGrid.maxSlots), BoardGrid.maxSlots)

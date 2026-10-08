@@ -26,6 +26,7 @@ struct PresetEdit: Equatable {
     var fontFamily: BoardFontFamily?
     var fontWeight: BoardFontWeight?
     var background: BackgroundStyle?
+    var themeId: UUID?
 
     func applying(to preset: BoardPreset) -> BoardPreset {
         var result = preset
@@ -44,6 +45,7 @@ struct PresetEdit: Equatable {
         if let fontFamily { result.fontFamily = fontFamily }
         if let fontWeight { result.fontWeight = fontWeight }
         if let background { result.background = background }
+        if let themeId { result.themeId = themeId }
         return result
     }
 

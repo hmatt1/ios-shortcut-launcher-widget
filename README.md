@@ -78,7 +78,7 @@ Images live as small PNGs in the App Group container (`buttonImages/<presetId>/`
 
 ### Shortcuts actions
 
-The app exposes Shortcuts actions (`App/Intents/`, app target only - the widget's own intents must stay out of the app binary, and nothing intent-related may live in `Shared/`): Create, Duplicate, Delete and Update Preset (every field optional, only the ones given change, clamped to the editor's ranges), and Set Button Image, Remove Button Image and Remove All Button Images. Button numbers run 1 to 64 in the order shortcuts are picked in the widget. The pure parts (`PresetEdit`, button validation) are unit-tested; the actions themselves can only be checked on a device. Theme actions are not built yet.
+The app exposes Shortcuts actions (`App/Intents/`, app target only - the widget's own intents must stay out of the app binary, and nothing intent-related may live in `Shared/`): Create, Duplicate, Delete and Update Preset (every field optional, only the ones given change, clamped to the editor's ranges), and Set Button Image, Remove Button Image and Remove All Button Images. Button numbers run 1 to 64 in the order shortcuts are picked in the widget. The pure parts (`PresetEdit`, button validation) are unit-tested; the actions themselves can only be checked on a device. Theme actions mirror them: Create, Duplicate, Delete and Update Theme (name, button colors, a flat or gradient background, and a label color, all as `#RRGGBB` text, validated with a readable error), and Update Preset can switch a preset's theme.
 
 ## Rendering
 
