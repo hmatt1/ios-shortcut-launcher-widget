@@ -62,12 +62,19 @@ struct PresetAppEntity: AppEntity {
     @Property(title: "Outer Corners")
     var outerCornerRadius: Int
 
+    @Property(title: "Buttons With Images")
+    var imageButtons: [Int]
+
     var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(title: "\(name)")
     }
 
     init(_ preset: BoardPreset) {
-        let summary = PresetSummary(preset, themeName: BoardThemeStore.loadTheme(id: preset.themeId).name)
+        let summary = PresetSummary(
+            preset,
+            themeName: BoardThemeStore.loadTheme(id: preset.themeId).name,
+            imageButtons: ButtonImageStore.buttons(presetId: preset.id)
+        )
         self.id = preset.id
         self.name = summary.name
         self.themeName = summary.themeName
@@ -84,6 +91,7 @@ struct PresetAppEntity: AppEntity {
         self.paddingY = summary.paddingY
         self.cornerRadius = summary.cornerRadius
         self.outerCornerRadius = summary.outerCornerRadius
+        self.imageButtons = summary.imageButtons
     }
 }
 

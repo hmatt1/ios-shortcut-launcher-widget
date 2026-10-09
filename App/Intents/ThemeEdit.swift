@@ -6,6 +6,7 @@ enum ThemeIntentError: Error, CustomLocalizedStringResourceConvertible {
     case lastTheme
     case invalidColor(String)
     case tooManyAccents(Int)
+    case tooManyLabels(Int)
 
     var localizedStringResource: LocalizedStringResource {
         switch self {
@@ -17,6 +18,8 @@ enum ThemeIntentError: Error, CustomLocalizedStringResourceConvertible {
             return "'\(text)' isn't a valid color. Use six hex digits, like #1A2B3C."
         case .tooManyAccents(let count):
             return "A theme holds at most \(ThemeEdit.maxAccents) button colors, not \(count)."
+        case .tooManyLabels(let count):
+            return "A theme holds at most \(ThemeEdit.maxAccents) label colors, not \(count)."
         }
     }
 }
@@ -34,6 +37,9 @@ struct ThemeEdit: Equatable {
     var backgroundColor2: String?
     /// One label color, applied to every button.
     var labelColor: String?
+    /// A label color per button (up to 12, repeating in order). Wins over
+    /// `labelColor` when both are given.
+    var labelColors: [String]?
     /// Button colors. Empty or nil leaves them alone.
     var buttonColors: [String]?
     /// True clears the button colors, so tiles use the faint label tint, as the
@@ -47,6 +53,11 @@ struct ThemeEdit: Equatable {
         let first = try backgroundColor.map(Self.parseColor)
         let second = try backgroundColor2.map(Self.parseColor)
         let label = try labelColor.map(Self.parseColor)
+        var labelList: [RGB]?
+        if let labelColors, !labelColors.isEmpty {
+            guard labelColors.count <= Self.maxAccents else { throw ThemeIntentError.tooManyLabels(labelColors.count) }
+            labelList = try labelColors.map(Self.parseColor)
+        }
         var accents: [RGB]?
         if let buttonColors, !buttonColors.isEmpty {
             guard buttonColors.count <= Self.maxAccents else { throw ThemeIntentError.tooManyAccents(buttonColors.count) }
@@ -61,6 +72,9 @@ struct ThemeEdit: Equatable {
         }
         if let label {
             result.spec.labels = Array(repeating: label, count: Self.maxAccents)
+        }
+        if let labelList {
+            result.spec.labels = (0..<Self.maxAccents).map { labelList[$0 % labelList.count] }
         }
         if monochrome == true {
             result.spec.accents = []
@@ -101,11 +115,14 @@ struct ThemeSummary: Equatable {
     var buttonColors: [String]
     var backgroundColors: [String]
     var labelColor: String
+    /// One per button; 12 for a theme edited in the app.
+    var labelColors: [String]
 
     init(_ theme: BoardTheme) {
         name = theme.name
         buttonColors = theme.spec.accents.map(ThemeEdit.hex)
         backgroundColors = theme.spec.background.map(ThemeEdit.hex)
         labelColor = theme.spec.labels.first.map(ThemeEdit.hex) ?? "#FFFFFF"
+        labelColors = theme.spec.labels.map(ThemeEdit.hex)
     }
 }

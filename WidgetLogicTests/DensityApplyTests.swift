@@ -90,4 +90,10 @@ final class DensityApplyTests: XCTestCase {
         XCTAssertEqual(summary.marginX, Int(preset.marginX))
         XCTAssertEqual(summary.outerCornerRadius, Int(preset.outerCornerRadius))
     }
+
+    func testPresetSummaryListsButtonsWithImagesInOrder() {
+        let summary = PresetSummary(base, themeName: "Midnight", imageButtons: [7, 2, 12])
+        XCTAssertEqual(summary.imageButtons, [2, 7, 12])
+        XCTAssertEqual(PresetSummary(base, themeName: "Midnight").imageButtons, [])
+    }
 }

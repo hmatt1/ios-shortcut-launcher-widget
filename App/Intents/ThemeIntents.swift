@@ -25,6 +25,9 @@ struct ThemeAppEntity: AppEntity {
     @Property(title: "Label Color")
     var labelColor: String
 
+    @Property(title: "Label Colors")
+    var labelColors: [String]
+
     var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(title: "\(name)")
     }
@@ -36,6 +39,7 @@ struct ThemeAppEntity: AppEntity {
         self.buttonColors = summary.buttonColors
         self.backgroundColors = summary.backgroundColors
         self.labelColor = summary.labelColor
+        self.labelColors = summary.labelColors
     }
 }
 
@@ -170,6 +174,9 @@ struct UpdateThemeIntent: AppIntent {
     @Parameter(title: "Label Color", description: "Hex color for every button's text.")
     var labelColor: String?
 
+    @Parameter(title: "Label Colors", description: "A hex text color per button, up to 12, repeating in order. Used instead of Label Color if both are given.")
+    var labelColors: [String]?
+
     @Parameter(title: "Button Colors", description: "Hex colors for the buttons, up to 12, repeating in order.")
     var buttonColors: [String]?
 
@@ -182,6 +189,7 @@ struct UpdateThemeIntent: AppIntent {
             \.$backgroundColor
             \.$backgroundColor2
             \.$labelColor
+            \.$labelColors
             \.$buttonColors
             \.$monochrome
         }
@@ -195,6 +203,7 @@ struct UpdateThemeIntent: AppIntent {
             backgroundColor: backgroundColor,
             backgroundColor2: backgroundColor2,
             labelColor: labelColor,
+            labelColors: labelColors,
             buttonColors: buttonColors,
             monochrome: monochrome
         )

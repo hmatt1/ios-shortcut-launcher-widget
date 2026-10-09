@@ -82,8 +82,10 @@ The app exposes Shortcuts actions (`App/Intents/`, app target only - the widget'
 
 - **Presets:** Create (with a Reuse Existing switch, so re-running a setup shortcut doesn't add duplicates), Duplicate (optionally named), Delete, Find (the whole list, optionally narrowed by name), **Update Preset** (name, theme, density, font, weight, background) and **Update Preset Layout** (columns, margins, spacing, padding, corners; numbers are clamped to the editor's ranges).
 - **Reading settings:** every preset and theme returned by an action exposes its settings as properties, so Shortcuts' built-in "Get Details of Preset / Theme" reads the font, density, spacing, colors and so on.
-- **Button images:** Set Button Image, Remove Button Image, Remove All Button Images. Button numbers run 1 to 64 in the order shortcuts are picked in the widget.
-- **Themes:** Create, Duplicate, Delete, Find, and **Update Theme** (name, background color and optional gradient end, label color, button colors, and a Monochrome Tiles switch). Colors are hex text (`#RRGGBB` or `#RGB`); a bad color changes nothing.
+- **Button images:** Set Button Image, Remove Button Image, Remove All Button Images. Button numbers run 1 to 64 in the order shortcuts are picked in the widget. A preset's "Buttons With Images" property lists which ones have a picture.
+- **Lists:** Move Preset / Move Theme (to a position), and Restore Default Presets / Themes (returning what they added), matching the drag handles and Restore buttons in the app.
+- **Wallpaper:** Set Wallpaper and Remove Wallpaper, for Transparent backgrounds.
+- **Themes:** Create, Duplicate, Delete, Find, and **Update Theme** (name, background color and optional gradient end, one label color or a label color per button, button colors, and a Monochrome Tiles switch). Colors are hex text (`#RRGGBB` or `#RGB`); a bad color changes nothing.
 
 Each action with several fields declares a parameter summary, so its card shows the main input and keeps the optional fields under "Show More". The pure parts (`PresetEdit`, `ThemeEdit`, `NameFilter`, the property summaries, `DensityTemplate.apply`) are unit-tested; the actions themselves can only be checked on a device.
 

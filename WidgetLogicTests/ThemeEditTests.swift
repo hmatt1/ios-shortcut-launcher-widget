@@ -148,4 +148,43 @@ final class ThemeEditTests: XCTestCase {
         let ink = BoardThemeStore.createDefaultThemes()[0]
         XCTAssertTrue(ThemeSummary(ink).buttonColors.isEmpty)
     }
+
+    // MARK: - Per-button label colors
+
+    func testLabelColorsSetEachButtonAndRepeat() throws {
+        var edit = ThemeEdit()
+        edit.labelColors = ["#FF0000", "#00FF00", "#0000FF"]
+        let labels = try edit.applying(to: base).spec.labels
+        XCTAssertEqual(labels.count, 12)
+        XCTAssertEqual(Array(labels.prefix(4)), [RGB(0xFF0000), RGB(0x00FF00), RGB(0x0000FF), RGB(0xFF0000)])
+    }
+
+    func testLabelColorsWinOverASingleLabelColor() throws {
+        var edit = ThemeEdit()
+        edit.labelColor = "#111111"
+        edit.labelColors = ["#222222", "#333333"]
+        let labels = try edit.applying(to: base).spec.labels
+        XCTAssertEqual(labels[0], RGB(0x222222))
+        XCTAssertEqual(labels[1], RGB(0x333333))
+    }
+
+    func testLabelColorsAreCappedAtTwelveAndEmptyIsIgnored() throws {
+        var edit = ThemeEdit()
+        edit.labelColors = Array(repeating: "#123456", count: 13)
+        XCTAssertThrowsError(try edit.applying(to: base))
+        edit.labelColors = []
+        XCTAssertEqual(try edit.applying(to: base), base)
+    }
+
+    func testABadLabelColorChangesNothing() {
+        var edit = ThemeEdit()
+        edit.labelColors = ["#FF0000", "nope"]
+        XCTAssertThrowsError(try edit.applying(to: base))
+    }
+
+    func testThemeSummaryReportsEveryLabelColor() {
+        let summary = ThemeSummary(base)
+        XCTAssertEqual(summary.labelColors, base.spec.labels.map(ThemeEdit.hex))
+        XCTAssertEqual(summary.labelColor, summary.labelColors.first)
+    }
 }

@@ -101,8 +101,10 @@ struct PresetSummary: Equatable {
     var paddingY: Int
     var cornerRadius: Int
     var outerCornerRadius: Int
+    /// Button numbers that have a picture, ascending.
+    var imageButtons: [Int]
 
-    init(_ preset: BoardPreset, themeName: String) {
+    init(_ preset: BoardPreset, themeName: String, imageButtons: [Int] = []) {
         name = preset.name
         self.themeName = themeName
         density = DensityTemplate.matching(preset)?.name ?? "Custom"
@@ -118,6 +120,7 @@ struct PresetSummary: Equatable {
         paddingY = Int(preset.paddingY.rounded())
         cornerRadius = Int(preset.cornerRadius.rounded())
         outerCornerRadius = Int(preset.outerCornerRadius.rounded())
+        self.imageButtons = imageButtons.sorted()
     }
 }
 
