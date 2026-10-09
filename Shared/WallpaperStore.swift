@@ -36,6 +36,13 @@ final class WallpaperStore: ObservableObject {
         hasWallpaper = Self.token != nil
     }
 
+    /// Re-reads whether a wallpaper is stored; for when the app returns to the
+    /// foreground.
+    func refreshFromDisk() {
+        let stored = Self.token != nil
+        if hasWallpaper != stored { hasWallpaper = stored }
+    }
+
     // MARK: - Writing (app side)
 
     /// Normalise `image` to `screenPoints * scale` pixels and pre-render every

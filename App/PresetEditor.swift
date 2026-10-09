@@ -1,6 +1,7 @@
 import SwiftUI
 import WidgetKit
 import PhotosUI
+import Combine
 
 struct CustomStepper<V: Strideable & Comparable>: View where V.Stride: SignedNumeric {
     let title: String
@@ -55,6 +56,12 @@ struct CustomStepper<V: Strideable & Comparable>: View where V.Stride: SignedNum
     }
 }
 
+/// One source of truth: this view holds NO copy of the preset, the theme or the
+/// button images. It reads them from the stores (`BoardPresetStore`,
+/// `BoardThemeStore`, `ButtonImageStore`) and writes every change straight back
+/// through them, so a Shortcuts action and the editor can never disagree, and
+/// the editor cannot overwrite a shortcut's change with stale values. Do not
+/// add `@State` copies of that data.
 struct PresetEditorView: View {
     let presetId: UUID
     @ObservedObject var store = BoardPresetStore.shared
@@ -62,12 +69,13 @@ struct PresetEditorView: View {
     @State private var size: BoardSize = .medium
     @State private var slots: Int = 4
     
-    @State private var preset: BoardPreset
     @State private var wallpaperItem: PhotosPickerItem?
     @State private var buttonImageItem: PhotosPickerItem?
-    /// Button numbers that have an image; refreshed after every change so the
-    /// list and the preview follow the files on disk.
-    @State private var imageButtons: [Int]
+    /// Bumped whenever button images may have changed (an editor action, a
+    /// Shortcuts action, returning to the app), so the views that derive from
+    /// the files on disk are evaluated again. The list itself is never cached.
+    @State private var imageRevision = 0
+    /// The button the next picked photo will be assigned to.
     @State private var newButtonNumber: Int
     /// Which slot the preview blends into. The real per-widget position is set
     /// in the widget's Edit sheet; this only steers the in-app preview.
@@ -105,14 +113,25 @@ struct PresetEditorView: View {
     init(presetId: UUID, onShowPresets: @escaping () -> Void = {}) {
         self.presetId = presetId
         self.onShowPresets = onShowPresets
-        // loadPreset(id:) is the safe version of this lookup (see
-        // Shared/BoardPresetStore.swift) - it never force-unwraps, even if
-        // the store were somehow empty.
-        let p = BoardPresetStore.shared.presets.first(where: { $0.id == presetId }) ?? BoardPresetStore.loadPreset(id: presetId)
-        _preset = State(initialValue: p)
-        let existing = ButtonImageStore.buttons(presetId: presetId)
-        _imageButtons = State(initialValue: existing)
-        _newButtonNumber = State(initialValue: Self.lowestUnusedButton(in: existing))
+        _newButtonNumber = State(initialValue: Self.lowestUnusedButton(in: ButtonImageStore.buttons(presetId: presetId)))
+    }
+
+    /// The preset, read from the store every time. loadPreset(id:) is the safe
+    /// fallback (see Shared/BoardPresetStore.swift): it never force-unwraps,
+    /// even if the store were somehow empty.
+    private var preset: BoardPreset {
+        store.presets.first(where: { $0.id == presetId }) ?? BoardPresetStore.loadPreset(id: presetId)
+    }
+
+    /// Edits go straight to the store, which saves and reloads the widgets.
+    private var presetBinding: Binding<BoardPreset> {
+        Binding(get: { preset }, set: { store.update($0) })
+    }
+
+    /// Button numbers that have a picture, read from disk each time.
+    private var imageButtons: [Int] {
+        _ = imageRevision
+        return ButtonImageStore.buttons(presetId: presetId)
     }
     
     var body: some View {
@@ -155,7 +174,7 @@ struct PresetEditorView: View {
             }
                 Form {
                     Section("Preset") {
-                        TextField("Preset Name", text: $preset.name)
+                        TextField("Preset Name", text: presetBinding.name)
                             .submitLabel(.done)
                     }
                     
@@ -191,20 +210,20 @@ struct PresetEditorView: View {
                             }
                         }
                         
-                        CustomStepper(title: "Columns", value: $preset.columns, range: 0...12, step: 1, stringValue: preset.columns == 0 ? "Auto" : "\(preset.columns)")
+                        CustomStepper(title: "Columns", value: presetBinding.columns, range: 0...12, step: 1, stringValue: preset.columns == 0 ? "Auto" : "\(preset.columns)")
                         
-                        CustomStepper(title: "Margin X", value: $preset.marginX, range: 0...40, step: 1, stringValue: "\(Int(preset.marginX))")
-                        CustomStepper(title: "Margin Y", value: $preset.marginY, range: 0...40, step: 1, stringValue: "\(Int(preset.marginY))")
-                        CustomStepper(title: "Spacing X", value: $preset.spacingX, range: 0...40, step: 1, stringValue: "\(Int(preset.spacingX))")
-                        CustomStepper(title: "Spacing Y", value: $preset.spacingY, range: 0...40, step: 1, stringValue: "\(Int(preset.spacingY))")
-                        CustomStepper(title: "Padding X", value: $preset.paddingX, range: 0...40, step: 1, stringValue: "\(Int(preset.paddingX))")
-                        CustomStepper(title: "Padding Y", value: $preset.paddingY, range: 0...40, step: 1, stringValue: "\(Int(preset.paddingY))")
-                        CustomStepper(title: "Inner Corners", value: $preset.cornerRadius, range: 0...32, step: 1, stringValue: "\(Int(preset.cornerRadius))")
-                        CustomStepper(title: "Outer Corners", value: $preset.outerCornerRadius, range: 0...32, step: 1, stringValue: "\(Int(preset.outerCornerRadius))")
+                        CustomStepper(title: "Margin X", value: presetBinding.marginX, range: 0...40, step: 1, stringValue: "\(Int(preset.marginX))")
+                        CustomStepper(title: "Margin Y", value: presetBinding.marginY, range: 0...40, step: 1, stringValue: "\(Int(preset.marginY))")
+                        CustomStepper(title: "Spacing X", value: presetBinding.spacingX, range: 0...40, step: 1, stringValue: "\(Int(preset.spacingX))")
+                        CustomStepper(title: "Spacing Y", value: presetBinding.spacingY, range: 0...40, step: 1, stringValue: "\(Int(preset.spacingY))")
+                        CustomStepper(title: "Padding X", value: presetBinding.paddingX, range: 0...40, step: 1, stringValue: "\(Int(preset.paddingX))")
+                        CustomStepper(title: "Padding Y", value: presetBinding.paddingY, range: 0...40, step: 1, stringValue: "\(Int(preset.paddingY))")
+                        CustomStepper(title: "Inner Corners", value: presetBinding.cornerRadius, range: 0...32, step: 1, stringValue: "\(Int(preset.cornerRadius))")
+                        CustomStepper(title: "Outer Corners", value: presetBinding.outerCornerRadius, range: 0...32, step: 1, stringValue: "\(Int(preset.outerCornerRadius))")
                     }
                     
                     Section("Font") {
-                        Picker("Font", selection: $preset.fontFamily) {
+                        Picker("Font", selection: presetBinding.fontFamily) {
                             ForEach(BoardFontFamily.allCases, id: \.self) { family in
                                 Text(family.displayName)
                                     .font(family.font(style: .body, points: 17, weight: .regular))
@@ -213,7 +232,7 @@ struct PresetEditorView: View {
                         }
                         .pickerStyle(.menu)
 
-                        Picker("Weight", selection: $preset.fontWeight) {
+                        Picker("Weight", selection: presetBinding.fontWeight) {
                             ForEach(BoardFontWeight.allCases, id: \.self) { weight in
                                 Text(weight.displayName).tag(weight)
                             }
@@ -276,7 +295,7 @@ struct PresetEditorView: View {
                     }
 
                     Section("Background") {
-                        Picker("Style", selection: $preset.background) {
+                        Picker("Style", selection: presetBinding.background) {
                             ForEach(BackgroundStyle.allCases, id: \.self) { style in
                                 Text(style.displayName).tag(style)
                             }
@@ -453,13 +472,21 @@ struct PresetEditorView: View {
         .sidePanel(edge: .trailing, isPresented: $showingThemeList) {
             ThemeListView(selectedId: Binding(
                 get: { preset.themeId.uuidString },
-                set: { if let uuid = UUID(uuidString: $0) { preset.themeId = uuid } }
+                set: {
+                    if let uuid = UUID(uuidString: $0) {
+                        var updated = preset
+                        updated.themeId = uuid
+                        store.update(updated)
+                    }
+                }
             ), isPresented: $showingThemeList)
         }
         .onAppear { refreshImageButtons() }
-        .onChange(of: preset) { _, newPreset in
-            store.update(newPreset)
-            WidgetCenter.shared.reloadAllTimelines()
+        .onReceive(NotificationCenter.default.publisher(for: .buttonImagesDidChange).receive(on: DispatchQueue.main)) { _ in
+            refreshImageButtons()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            imageRevision += 1
         }
     }
     
@@ -535,7 +562,9 @@ struct PresetEditorView: View {
     }
 
     func applyTemplate(_ template: DensityTemplate) {
-        template.apply(to: &preset)
+        var updated = preset
+        template.apply(to: &updated)
+        store.update(updated)
     }
     
     private static func lowestUnusedButton(in used: [Int]) -> Int {
@@ -543,8 +572,8 @@ struct PresetEditorView: View {
     }
 
     private func refreshImageButtons() {
-        imageButtons = ButtonImageStore.buttons(presetId: preset.id)
-        newButtonNumber = Self.lowestUnusedButton(in: imageButtons)
+        imageRevision += 1
+        newButtonNumber = Self.lowestUnusedButton(in: ButtonImageStore.buttons(presetId: presetId))
     }
 
     private func removeButtonImage(_ button: Int) {

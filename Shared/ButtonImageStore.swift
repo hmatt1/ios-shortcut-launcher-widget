@@ -14,7 +14,20 @@ import ImageIO
 /// thumbnail, so the bitmaps it holds add up to roughly the widget's canvas, no
 /// matter how many buttons have images. Nothing here throws into rendering:
 /// every failure reads as "no image" and the tile falls back to its label.
+extension Notification.Name {
+    /// Posted after a preset's button images change (saved, removed or copied),
+    /// with the preset's id under `ButtonImageStore.presetIdKey` in `userInfo`.
+    /// Views that show the images listen for it instead of caching a list.
+    static let buttonImagesDidChange = Notification.Name("ButtonImageStore.buttonImagesDidChange")
+}
+
 enum ButtonImageStore {
+    static let presetIdKey = "presetId"
+
+    private static func announceChange(_ presetId: UUID) {
+        NotificationCenter.default.post(name: .buttonImagesDidChange, object: nil, userInfo: [presetIdKey: presetId])
+    }
+
     /// Longest side, in pixels, of a stored image.
     static let maxStoredPixels = 512
 
@@ -44,6 +57,7 @@ enum ButtonImageStore {
         for old in files(in: directory) where old.button == button && old.name != name {
             try? FileManager.default.removeItem(at: directory.appendingPathComponent(old.name))
         }
+        announceChange(presetId)
         return true
     }
 
@@ -52,11 +66,13 @@ enum ButtonImageStore {
         for file in files(in: directory) where file.button == button {
             try? FileManager.default.removeItem(at: directory.appendingPathComponent(file.name))
         }
+        announceChange(presetId)
     }
 
     static func removeAll(presetId: UUID) {
         guard let directory = directory(for: presetId, create: false) else { return }
         try? FileManager.default.removeItem(at: directory)
+        announceChange(presetId)
     }
 
     /// Copies every image of one preset to another, for Duplicate.
@@ -69,6 +85,7 @@ enum ButtonImageStore {
                 to: to.appendingPathComponent(file.name)
             )
         }
+        announceChange(destination)
     }
 
     // MARK: - Reading (widget and editor)

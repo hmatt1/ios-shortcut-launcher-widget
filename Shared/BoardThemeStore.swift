@@ -40,6 +40,17 @@ public class BoardThemeStore: ObservableObject {
         )
     }
     
+    /// Re-reads the saved themes and adopts them if they differ from memory; see
+    /// `BoardPresetStore.reloadFromDisk()`.
+    public func reloadFromDisk() {
+        guard let defaults,
+              let data = defaults.data(forKey: key),
+              let saved = try? JSONDecoder().decode([BoardTheme].self, from: data),
+              !saved.isEmpty,
+              saved != themes else { return }
+        themes = saved
+    }
+
     private func save() {
         if let encoded = try? JSONEncoder().encode(themes) {
             defaults?.set(encoded, forKey: key)

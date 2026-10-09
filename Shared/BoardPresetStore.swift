@@ -3,6 +3,17 @@ import CoreGraphics
 import SwiftUI
 import WidgetKit
 
+/// Which preset the editor shows. A preset deleted elsewhere (say, by a
+/// Shortcuts action) must move the editor to a real one, never to a ghost.
+public enum PresetSelection {
+    /// `requested` if it still exists, otherwise the first preset; nil only for
+    /// an empty list.
+    public static func effectiveId(requested: UUID?, in presets: [BoardPreset]) -> UUID? {
+        if let requested, presets.contains(where: { $0.id == requested }) { return requested }
+        return presets.first?.id
+    }
+}
+
 public struct DensityTemplate: Identifiable, Hashable, Sendable {
     public let id: String
     public let name: String
@@ -113,6 +124,19 @@ public class BoardPresetStore: ObservableObject {
         )
     }
     
+    /// Re-reads the saved presets and adopts them if they differ from memory.
+    /// A guard for any path that changed the saved data outside this singleton;
+    /// it only adopts data that decodes, so an unreadable store never replaces
+    /// good presets with defaults. Publishes nothing when nothing changed.
+    public func reloadFromDisk() {
+        guard let defaults,
+              let data = defaults.data(forKey: key),
+              let saved = try? JSONDecoder().decode([BoardPreset].self, from: data),
+              !saved.isEmpty,
+              saved != presets else { return }
+        presets = saved
+    }
+
     private func save() {
         if let encoded = try? JSONEncoder().encode(presets) {
             defaults?.set(encoded, forKey: key)

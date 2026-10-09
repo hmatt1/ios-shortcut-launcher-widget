@@ -88,6 +88,10 @@ The app exposes Shortcuts actions (`App/Intents/`, app target only - the widget'
 
 Each action with several fields declares a parameter summary, so its card shows the main input and keeps the optional fields under "Show More". The pure parts (`PresetEdit`, `ThemeEdit`, `NameFilter`, the property summaries, `DensityTemplate.apply`) are unit-tested; the actions themselves can only be checked on a device.
 
+### One source of truth
+
+Presets, themes, button images and the wallpaper each live in exactly one place (`BoardPresetStore`, `BoardThemeStore`, `ButtonImageStore`, `WallpaperStore`), and the editor holds no copy of any of them: it reads from the store and writes every change straight back through it. That is what lets a Shortcuts action and the editor edit the same data without one overwriting the other. The editor follows the store when a preset is deleted elsewhere, button images announce changes (`Notification.Name.buttonImagesDidChange`), and the stores re-read their saved data when the app returns to the foreground. Saved data formats are unchanged.
+
 ## Rendering
 
 Accented mode was designed first. When someone picks a tinted or clear Home Screen the system switches the widget out of `WidgetRenderingMode.fullColor`, tints content white and replaces the container background. The widget then draws no background and no color, and each tile keeps a translucent white chip, because the system preserves the opacity of translucent content and tints it. That chip is what keeps the board readable as a grid once the color is gone. All widget content is one group, so there is nothing for `.widgetAccentable()` to separate.
