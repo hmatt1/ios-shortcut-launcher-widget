@@ -23,7 +23,7 @@ struct PresetAppEntity: AppEntity {
     @Property(title: "Theme")
     var themeName: String
 
-    @Property(title: "Density", description: "Flush, Hairline, Standard, Relaxed, Open, or Custom.")
+    @Property(title: "Density")
     var density: String
 
     @Property(title: "Font")
@@ -35,7 +35,7 @@ struct PresetAppEntity: AppEntity {
     @Property(title: "Background")
     var background: BackgroundStyle
 
-    @Property(title: "Columns", description: "0 means Auto.")
+    @Property(title: "Columns")
     var columns: Int
 
     @Property(title: "Margin X")

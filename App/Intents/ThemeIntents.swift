@@ -16,10 +16,10 @@ struct ThemeAppEntity: AppEntity {
     @Property(title: "Name")
     var name: String
 
-    @Property(title: "Button Colors", description: "Empty for a monochrome theme.")
+    @Property(title: "Button Colors")
     var buttonColors: [String]
 
-    @Property(title: "Background Colors", description: "One color is flat, two is a gradient.")
+    @Property(title: "Background Colors")
     var backgroundColors: [String]
 
     @Property(title: "Label Color")
