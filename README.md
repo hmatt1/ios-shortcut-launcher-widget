@@ -78,7 +78,14 @@ Images live as small PNGs in the App Group container (`buttonImages/<presetId>/`
 
 ### Shortcuts actions
 
-The app exposes Shortcuts actions (`App/Intents/`, app target only - the widget's own intents must stay out of the app binary, and nothing intent-related may live in `Shared/`): Create, Duplicate, Delete and Update Preset (every field optional, only the ones given change, clamped to the editor's ranges), and Set Button Image, Remove Button Image and Remove All Button Images. Button numbers run 1 to 64 in the order shortcuts are picked in the widget. The pure parts (`PresetEdit`, button validation) are unit-tested; the actions themselves can only be checked on a device. Find Presets and Find Themes return the whole list (optionally narrowed by name) so a shortcut can loop over it, and each item exposes a Name. Theme actions mirror the preset ones: Create, Duplicate, Delete and Update Theme (name, button colors, a flat or gradient background, and a label color, all as `#RRGGBB` text, validated with a readable error), and Update Preset can switch a preset's theme.
+The app exposes Shortcuts actions (`App/Intents/`, app target only - the widget's own intents must stay out of the app binary, and nothing intent-related may live in `Shared/`) so presets and themes can be managed without tapping through the editor.
+
+- **Presets:** Create (with a Reuse Existing switch, so re-running a setup shortcut doesn't add duplicates), Duplicate (optionally named), Delete, Find (the whole list, optionally narrowed by name), **Update Preset** (name, theme, density, font, weight, background) and **Update Preset Layout** (columns, margins, spacing, padding, corners; numbers are clamped to the editor's ranges).
+- **Reading settings:** every preset and theme returned by an action exposes its settings as properties, so Shortcuts' built-in "Get Details of Preset / Theme" reads the font, density, spacing, colors and so on.
+- **Button images:** Set Button Image, Remove Button Image, Remove All Button Images. Button numbers run 1 to 64 in the order shortcuts are picked in the widget.
+- **Themes:** Create, Duplicate, Delete, Find, and **Update Theme** (name, background color and optional gradient end, label color, button colors, and a Monochrome Tiles switch). Colors are hex text (`#RRGGBB` or `#RGB`); a bad color changes nothing.
+
+Each action with several fields declares a parameter summary, so its card shows the main input and keeps the optional fields under "Show More". The pure parts (`PresetEdit`, `ThemeEdit`, `NameFilter`, the property summaries, `DensityTemplate.apply`) are unit-tested; the actions themselves can only be checked on a device.
 
 ## Rendering
 

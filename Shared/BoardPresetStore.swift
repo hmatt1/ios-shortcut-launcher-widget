@@ -38,6 +38,35 @@ extension DensityTemplate {
         DensityTemplate(id: "relaxed", name: "Relaxed", layout: BoardLayoutValues(columns: 0, marginX: 12, marginY: 12, spacingX: 9, spacingY: 9, paddingX: 12, paddingY: 12, cornerRadius: 13, outerCornerRadius: 13)),
         DensityTemplate(id: "open", name: "Open", layout: BoardLayoutValues(columns: 0, marginX: 16, marginY: 16, spacingX: 12, spacingY: 12, paddingX: 12, paddingY: 12, cornerRadius: 15, outerCornerRadius: 15))
     ]
+
+    /// Sets the eight layout fields a density controls. Columns are left alone:
+    /// only individual presets pin a column count. The editor and the Shortcuts
+    /// "Update Preset" action both use this, so they can't drift apart.
+    public func apply(to preset: inout BoardPreset) {
+        preset.marginX = layout.marginX
+        preset.marginY = layout.marginY
+        preset.spacingX = layout.spacingX
+        preset.spacingY = layout.spacingY
+        preset.paddingX = layout.paddingX
+        preset.paddingY = layout.paddingY
+        preset.cornerRadius = layout.cornerRadius
+        preset.outerCornerRadius = layout.outerCornerRadius
+    }
+
+    /// The template whose eight layout fields match `preset` exactly, or nil
+    /// for a hand-tuned ("Custom") layout.
+    public static func matching(_ preset: BoardPreset) -> DensityTemplate? {
+        all.first { template in
+            preset.marginX == template.layout.marginX
+                && preset.marginY == template.layout.marginY
+                && preset.spacingX == template.layout.spacingX
+                && preset.spacingY == template.layout.spacingY
+                && preset.paddingX == template.layout.paddingX
+                && preset.paddingY == template.layout.paddingY
+                && preset.cornerRadius == template.layout.cornerRadius
+                && preset.outerCornerRadius == template.layout.outerCornerRadius
+        }
+    }
 }
 
 @MainActor

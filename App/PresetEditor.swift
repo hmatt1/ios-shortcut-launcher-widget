@@ -531,30 +531,11 @@ struct PresetEditorView: View {
     }
 
     var currentTemplateName: String {
-        for template in DensityTemplate.all {
-            if preset.marginX == template.layout.marginX &&
-               preset.marginY == template.layout.marginY &&
-               preset.spacingX == template.layout.spacingX &&
-               preset.spacingY == template.layout.spacingY &&
-               preset.paddingX == template.layout.paddingX &&
-               preset.paddingY == template.layout.paddingY &&
-               preset.cornerRadius == template.layout.cornerRadius &&
-               preset.outerCornerRadius == template.layout.outerCornerRadius {
-                return template.name
-            }
-        }
-        return "Custom"
+        DensityTemplate.matching(preset)?.name ?? "Custom"
     }
 
     func applyTemplate(_ template: DensityTemplate) {
-        preset.marginX = template.layout.marginX
-        preset.marginY = template.layout.marginY
-        preset.spacingX = template.layout.spacingX
-        preset.spacingY = template.layout.spacingY
-        preset.paddingX = template.layout.paddingX
-        preset.paddingY = template.layout.paddingY
-        preset.cornerRadius = template.layout.cornerRadius
-        preset.outerCornerRadius = template.layout.outerCornerRadius
+        template.apply(to: &preset)
     }
     
     private static func lowestUnusedButton(in used: [Int]) -> Int {

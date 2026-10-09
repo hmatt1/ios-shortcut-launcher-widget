@@ -6,6 +6,8 @@ import AppIntents
 // app binary, and nothing intent-related may live in Shared/ (see the
 // "App Intents guard" step in build.yml). Hence the separate PresetAppEntity.
 
+/// A preset as Shortcuts sees it. The properties are what "Get Details of
+/// Preset" offers, so a shortcut can read any setting, not just the name.
 struct PresetAppEntity: AppEntity {
     static var typeDisplayRepresentation: TypeDisplayRepresentation {
         TypeDisplayRepresentation(name: "Preset")
@@ -15,18 +17,73 @@ struct PresetAppEntity: AppEntity {
 
     let id: UUID
 
-    /// A property, not just a stored value, so a shortcut can read "Name" from
-    /// each item the Find Presets action returns.
     @Property(title: "Name")
     var name: String
+
+    @Property(title: "Theme")
+    var themeName: String
+
+    @Property(title: "Density", description: "Flush, Hairline, Standard, Relaxed, Open, or Custom.")
+    var density: String
+
+    @Property(title: "Font")
+    var fontFamily: BoardFontFamily
+
+    @Property(title: "Font Weight")
+    var fontWeight: BoardFontWeight
+
+    @Property(title: "Background")
+    var background: BackgroundStyle
+
+    @Property(title: "Columns", description: "0 means Auto.")
+    var columns: Int
+
+    @Property(title: "Margin X")
+    var marginX: Int
+
+    @Property(title: "Margin Y")
+    var marginY: Int
+
+    @Property(title: "Spacing X")
+    var spacingX: Int
+
+    @Property(title: "Spacing Y")
+    var spacingY: Int
+
+    @Property(title: "Padding X")
+    var paddingX: Int
+
+    @Property(title: "Padding Y")
+    var paddingY: Int
+
+    @Property(title: "Inner Corners")
+    var cornerRadius: Int
+
+    @Property(title: "Outer Corners")
+    var outerCornerRadius: Int
 
     var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(title: "\(name)")
     }
 
     init(_ preset: BoardPreset) {
+        let summary = PresetSummary(preset, themeName: BoardThemeStore.loadTheme(id: preset.themeId).name)
         self.id = preset.id
-        self.name = preset.name
+        self.name = summary.name
+        self.themeName = summary.themeName
+        self.density = summary.density
+        self.fontFamily = summary.fontFamily
+        self.fontWeight = summary.fontWeight
+        self.background = summary.background
+        self.columns = summary.columns
+        self.marginX = summary.marginX
+        self.marginY = summary.marginY
+        self.spacingX = summary.spacingX
+        self.spacingY = summary.spacingY
+        self.paddingX = summary.paddingX
+        self.paddingY = summary.paddingY
+        self.cornerRadius = summary.cornerRadius
+        self.outerCornerRadius = summary.outerCornerRadius
     }
 }
 

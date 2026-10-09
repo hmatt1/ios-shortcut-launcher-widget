@@ -52,4 +52,19 @@ final class FindFilterTests: XCTestCase {
         XCTAssertEqual(ember.map(\.name), ["Ember"])
         XCTAssertEqual(NameFilter.matching(themes, name: \.name, containing: nil).count, themes.count)
     }
+
+    // MARK: - first(named:)
+
+    func testFirstNamedIsCaseInsensitiveAndExact() {
+        XCTAssertEqual(NameFilter.first(names, name: { $0 }, named: "EMBER"), "Ember")
+        XCTAssertEqual(NameFilter.first(names, name: { $0 }, named: "  frost "), "Frost")
+        XCTAssertNil(NameFilter.first(names, name: { $0 }, named: "Embe"), "partial names don't count")
+        XCTAssertNil(NameFilter.first(names, name: { $0 }, named: "zzz"))
+    }
+
+    func testFirstNamedReturnsTheFirstOfDuplicatesAndNilForBlank() {
+        XCTAssertEqual(NameFilter.first(["A", "a", "B"], name: { $0 }, named: "a"), "A")
+        XCTAssertNil(NameFilter.first(names, name: { $0 }, named: ""))
+        XCTAssertNil(NameFilter.first(names, name: { $0 }, named: "   "))
+    }
 }

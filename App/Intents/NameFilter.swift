@@ -14,4 +14,15 @@ enum NameFilter {
         }
         return items.filter { name($0).localizedStandardContains(trimmed) }
     }
+
+    /// The first item whose name equals `text` (ignoring case and surrounding
+    /// whitespace), used by "Reuse Existing". Nil when there is none or `text`
+    /// is blank.
+    static func first<T>(_ items: [T], name: (T) -> String, named text: String) -> T? {
+        let wanted = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !wanted.isEmpty else { return nil }
+        return items.first {
+            name($0).trimmingCharacters(in: .whitespacesAndNewlines).caseInsensitiveCompare(wanted) == .orderedSame
+        }
+    }
 }
