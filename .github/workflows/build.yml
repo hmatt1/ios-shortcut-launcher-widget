@@ -205,6 +205,10 @@ jobs:
             echo "ERROR: the app bundle is missing UpdatePresetIntent App Intents metadata."
             exit 1
           fi
+          if ! grep -rl "FindPresetsIntent" "$APP_DIR"/Metadata.appintents 2>/dev/null; then
+            echo "ERROR: the app bundle is missing FindPresetsIntent App Intents metadata."
+            exit 1
+          fi
 
           # 3. Create ExportOptions.plist - manual signing, pointing at the
           # exact same fixed certificate and profiles as project.yml.

@@ -14,7 +14,11 @@ struct PresetAppEntity: AppEntity {
     static var defaultQuery = PresetAppQuery()
 
     let id: UUID
-    let name: String
+
+    /// A property, not just a stored value, so a shortcut can read "Name" from
+    /// each item the Find Presets action returns.
+    @Property(title: "Name")
+    var name: String
 
     var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(title: "\(name)")
@@ -32,8 +36,7 @@ struct PresetAppQuery: EntityStringQuery {
     }
 
     func entities(matching string: String) async throws -> [PresetAppEntity] {
-        BoardPresetStore.loadRaw()
-            .filter { $0.name.localizedCaseInsensitiveContains(string) }
+        NameFilter.matching(BoardPresetStore.loadRaw(), name: \.name, containing: string)
             .map(PresetAppEntity.init)
     }
 

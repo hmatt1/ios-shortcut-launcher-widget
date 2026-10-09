@@ -10,7 +10,10 @@ struct ThemeAppEntity: AppEntity {
     static var defaultQuery = ThemeAppQuery()
 
     let id: UUID
-    let name: String
+
+    /// A property so a shortcut can read "Name" from each item Find Themes returns.
+    @Property(title: "Name")
+    var name: String
 
     var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(title: "\(name)")
@@ -28,8 +31,7 @@ struct ThemeAppQuery: EntityStringQuery {
     }
 
     func entities(matching string: String) async throws -> [ThemeAppEntity] {
-        BoardThemeStore.loadRaw()
-            .filter { $0.name.localizedCaseInsensitiveContains(string) }
+        NameFilter.matching(BoardThemeStore.loadRaw(), name: \.name, containing: string)
             .map(ThemeAppEntity.init)
     }
 
